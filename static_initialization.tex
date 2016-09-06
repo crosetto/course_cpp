@@ -141,13 +141,9 @@ int main(){
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Comments}
-  \begin{definition}[Translation Unit]
-    consists in all the code required to compile a cpp file (all the headers).
-  \end{definition}
-
   \begin{itemize}
   \item Initialization of non-trivial static variable can be painful.
-  \item If the static variables are in different translation units, their initialization order is arbitrary: cannot have static variables depending on each other (known as \alert6{static order initialization fiasco});
+  \item If the static variables are in different translation units, their initialization order is arbitrary: cannot have static variables depending on each other (known as \alert{static order initialization fiasco});
   \item Even if they are in the same translation uint, you can get surprises
   \end{itemize}
 
@@ -157,6 +153,11 @@ int main(){
   \item Or use constant initialization if the static variables are constants;
   \item Or initialize the variables on first touch.
   \end{itemize}
+
+  \begin{definition}[Translation Unit]
+    consists in all the code required to compile a cpp file (all the headers).
+  \end{definition}
+
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Constant Initialization}
@@ -227,9 +228,9 @@ static int S() {
     return m_c;
 }
 int main(){
-    std::cout << "m_f = " << F() << '\n';       //500
-    std::cout << "m_d = " << D() << '\n';//50
-    std::cout << "m_c = " << S() << '\n';} //5
+    std::cout << "m_f = " << F() << '\n'; //500
+    std::cout << "m_d = " << D() << '\n'; //50
+    std::cout << "m_c = " << S() << '\n';}//5
 \end{Cpplisting}
 %% }
 \end{frame}

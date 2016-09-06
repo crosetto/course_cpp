@@ -1,4 +1,3 @@
-
 \documentclass[aspectratio=43]{beamer}
 % Theme works only with a 4:3 aspect ratio
 \usetheme{CSCS}
@@ -169,7 +168,7 @@ int main(){
   \item on function return type: the fuction may or MAY NOT return a constant expression;
   \item on variable instance: the instance is a constant expression
   \end{itemize}
-\begin{Cpplisting}[: example]{}
+\begin{Cpplisting}[: example\_01.cpp]{}
   constexpr float d=13.2;
   constexpr double f(){return 13.2;}
   static_assert(d==13.2, "");
@@ -256,7 +255,7 @@ int main(){
 \begin{frame}[fragile]\frametitle{Syntax}
   In order to instantiate your own class as a constant expression:
   \begin{itemize}
-  \item must contain/inherit from objects with a constexpr constructor;
+  \item must contain and inherit from objects with a constexpr constructor;
   \item must have a constexpr constructor;
   \item constexpr constructor must be a constexpr function (see cppreference for details)
   \end{itemize}
@@ -265,7 +264,7 @@ NOTE: function arguments cannot be labeled constexpr.
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Syntax}
-  \begin{Cpplisting}[: example]{}
+  \begin{Cpplisting}[: example\_03.cpp]{}
 struct my_const_struct{
     template<typename T>
     constexpr my_const_struct(T t_) : m_i(0){
@@ -327,12 +326,8 @@ How would you write this as a template metafunction?
 \end{frame}
 \end{comment}
 
-\begin{frame}[fragile]\frametitle{Corner Cases}
-  \begin{itemize}
-  \item Expression with undefined result or throwing exceptions are NOT constant expressions
-\end{itemize}
-
-\begin{Cpplisting}[: divide by zero]{}
+\begin{frame}[fragile]\frametitle{Corner Case}
+\begin{Cpplisting}[: example\_04.cpp]{}
 constexpr int divide(int id) {
     return id>-1 ? id/divide(id-1) : id;
 };
@@ -343,7 +338,13 @@ int main(){
 gives the error:
 \verb1error: non-constant condition for static assertion1
 
+\uncover<2>{
+\begin{itemize}
+  \item Expression with undefined result or throwing exceptions are NOT constant expressions
+\end{itemize}
+
 \alert{Obscure error, be careful when checking out-of-bounds indices}
+}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -351,7 +352,7 @@ gives the error:
   \item constexpr lambdas
 \end{itemize}
 
-\begin{Cpplisting}[: divide by zero]{}
+\begin{Cpplisting}[: constexpr lambdas]{}
 constexpr auto f_(){return 5;}
 int main(){
     constexpr auto f = []()->int{ return 5;};
@@ -380,7 +381,7 @@ int main(){
 \begin{frame}[fragile]\frametitle{Check if Constant Expression}
   trick to determine if a function returns a constant expression:
   \alert{use the noexcept} keyword
-  \begin{Cpplisting}[: check if constexpr]{}
+  \begin{Cpplisting}[: example\_05.cpp]{}
 struct test{
     int m_val;
     constexpr test(int arg_) : m_val{arg_}{}
@@ -425,7 +426,7 @@ int main(){
 
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   We define a placeholder, i.e. a type representing our independent variable $x$.
-\begin{Cpplisting}[: define placeholder]{}
+\begin{Cpplisting}[: p.cpp]{}
 struct p{
   constexpr p(){};
 
@@ -443,7 +444,7 @@ Global variable x=p(): to lighten the notation.
 
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   define the plus expression and overload the $+$ operator
-\begin{Cpplisting}[: sum expression]{}
+\begin{Cpplisting}[: plus.cpp]{}
 template <typename T1, typename T2>
 struct expr_plus{
   template<typename T>
@@ -462,7 +463,7 @@ NOTE: in real code use protections and namespaces
 
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   define the times expression and overload the $*$ operator
-\begin{Cpplisting}[: times expression]{}
+\begin{Cpplisting}[: times.cpp]{}
 template <typename T1, typename T2>
 struct expr_times{
   template<typename T>
@@ -481,9 +482,6 @@ operator * (T1 arg1, T2 arg2){
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   main function:
   \begin{Cpplisting}[: main]{}
-#include "p.hpp"
-#include "expr_times.hpp"
-#include "expr_plus.hpp"
 int main(){
   constexpr auto expr = x*x*x; // define an expression
   std::cout<< expr(3)<<"\n"; // evaluate it in x=3
@@ -519,7 +517,7 @@ struct expr_derivative<p>{
 
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   Derivative of the sum: $\frac{\partial (a+b)}{\partial x}=\frac{\partial (a)}{\partial x}+\frac{\partial (b)}{\partial x}$
-  \begin{Cpplisting}[: sum derivative]{}
+  \begin{Cpplisting}[: Dplus.cpp]{}
 template <typename T1, typename T2>
 struct expr_derivative<expr_plus<T1, T2> >{
     using value_t = decltype(D(T1())+ D(T2()));
@@ -534,7 +532,7 @@ struct expr_derivative<expr_plus<T1, T2> >{
 
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   Derivative of the product: $\frac{\partial (a*b)}{\partial x}=\frac{\partial (a)}{\partial x}*b+a*\frac{\partial (b)}{\partial x}$
-  \begin{Cpplisting}[: product derivative]{}
+  \begin{Cpplisting}[: Dtimes.cpp]{}
 
 template <typename T1, typename T2>
 struct expr_derivative<expr_times<T1, T2> >{
@@ -554,7 +552,7 @@ struct expr_derivative<expr_times<T1, T2> >{
 
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   Derivative of the derivative: $\frac{\partial^2 a}{\partial x} = \frac{\partial (\frac{\partial a}{\partial x})}{\partial x}$
-  \begin{Cpplisting}[: second derivative]{}
+  \begin{Cpplisting}[: DD.cpp]{}
 template <typename T1>
 struct expr_derivative<expr_derivative<T1>>{
 
@@ -568,7 +566,7 @@ struct expr_derivative<expr_derivative<T1>>{
   \end{Cpplisting}
 
   We also define the operator \verb1D1, returning the derivative expression
-  \begin{Cpplisting}[: D operator]{}
+  \begin{Cpplisting}[: D.cpp]{}
 template <typename T1>
 constexpr expr_derivative<T1>
 D (T1 arg1){
@@ -578,11 +576,7 @@ D (T1 arg1){
 
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   Now we can extend our main function with the derivative computation:
-  \begin{Cpplisting}[: main]{}
-#include "p.hpp"
-#include "expr_times.hpp"
-#include "expr_plus.hpp"
-#include "expr_derivative.hpp"
+  \begin{Cpplisting}[: main.cpp]{}
 int main(){
   constexpr auto expr = x*x*x; // define an expression
   std::cout<< expr(3)<<"\n"; // evaluate it in x=3
@@ -608,13 +602,61 @@ std::cout<< "multiplications: "<< D(expr).mult_ops()<<"\n";
   \item Implement a multidimensional array indexing
   \item with arbitrary dimensionality;
   \item with strides computation happening at compile time when all dimension are compile-time constants;
-  \item with an index function, returning a global storage index given the dimensions;
+  \item with an index function, returning the index given the dimensions;
   \end{itemize}
-  We considers 2 main objects:
-  \begin{itemize}
-    \item a \verb1storage_info1, containing the dimensionality, the strides, and the index member function;
-    \item a \verb1storage1, trivial class containing the pointer to the data (\alert{not considered here});
-  \end{itemize}
+
+  \begin{onlyenv}<1>
+    \begin{Cpplisting}[: main\_storage.cpp]{}
+int main(){
+
+
+
+
+
+
+
+
+
+}
+    \end{Cpplisting}
+  \end{onlyenv}
+  \begin{onlyenv}<2>
+  \begin{Cpplisting}[: storage\_main.cpp]{}
+int main(){
+  //run-time instance
+  storage_info<3> meta_(5,4,3);
+  std::cout<<"index(1,0,0): "<<meta_.index(1,0,0)<<"\n";//1
+  std::cout<<"index(0,1,0): "<<meta_.index(0,1,0)<<"\n";//5
+  std::cout<<"index(0,0,1): "<<meta_.index(0,0,1)<<"\n";//20
+  //compile-time instance
+  constexpr storage_info<5> c_meta_{5,8};
+  static_assert(c_meta_.index(1,0)==1, "error");
+  static_assert(c_meta_.index(0,1)==5, "error");
+}
+    \end{Cpplisting}
+  \end{onlyenv}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Example II: Storage}
+  Formula to compute the global index:
+  $$
+  g = index_0 + (dims_0)(index_1) + (dims_0dims_1)(index_2) + ...
+  $$
+  which is, for generic d dimensions
+  $$
+  g = index_0 + \sum_{k=1}^{d-1}\left(\prod_{i=0}^kdims_i\right)(index_{k});
+  $$
+  Think recursively:
+  $$
+    \left\{
+  \begin{array}{l}
+      g_n = g_{n-1} * dims_n + index_{n-1};\\
+      g_0 = index_0
+  \end{array}
+  \right.
+  $$
+
 
 \end{frame}
 
@@ -623,24 +665,27 @@ std::cout<< "multiplications: "<< D(expr).mult_ops()<<"\n";
   variadic templates and \verb1std::integer_sequence1. It relies on recursion (this should be familiar).
 
   \alert{Reminder:}
+  to specify etherogeneous lists of types:
   \begin{Cpplisting}[: variadic templates]{}
   template<typename ... Ints>
   constexpr int index(Ints ... idx){
   \end{Cpplisting}
-  allows specifying etherogeneous lists of types
 
+  to assign an integer index to each of the elements in the \verb1dims_1 ("zipping"):
   \begin{Cpplisting}[: integer sequence]{}
   template<int ... Indices, typename ... Ints>
-  constexpr int idx_impl(std::integer_sequence< Indices ... > , Ints ... dims_) const;
+  constexpr int idx_impl(std::integer_sequence< Indices ... > , Ints ... dims_) const{
+    do_something(attach_id(dims_, Indices) ...);
+  }
   \end{Cpplisting}
-  to assign an integer index to each of the elements in the \verb1dims_1 parameter pack ("zipping")
 \end{frame}
 
 
 \begin{frame}[fragile]\frametitle{Example II: Storage Info}
-  \begin{Cpplisting}[: storage info]{}
+  \begin{Cpplisting}[: storage\_main.cpp]{}
 template <int Size>
 struct storage_info{
+
   template <typename ... Dims>
   constexpr storage_info(Dims ... dims_) : m_dims{dims_ ...}{}
 
@@ -649,32 +694,80 @@ struct storage_info{
   template<int Coord>
   constexpr int dim() const {return m_dims[Coord];}
 
-  template<typename ... Ints>
-  constexpr int index(Ints ... idx_) const{
-    return idx_impl(std::make_integer_sequence<int, sizeof...(Ints)>(), idx_ ... );
-  }
-
-  template<int ... Indices, typename ... Dims>
-  constexpr int idx_impl(std::integer_sequence< Indices ... > , Dims ... dims_) const;
 private:
   int m_dims[Size];
 };
   \end{Cpplisting}
-
+\uncover<2>{  We need to imlement the \emph{index} method }
 \end{frame}
 
+\begin{frame}[fragile]\frametitle{Example II: Storage Info}
+  \begin{Cpplisting}[: index.cpp]{}
+template<typename ... Ints>
+constexpr int index(Ints ... coords_) const{
+  return idx_impl(
+    std::make_integer_sequence<int, sizeof...(Ints)>()
+    , coords_ ... );
+}
+  \end{Cpplisting}
+  \uncover<2>{  We pass on 2 parameter packs: the \emph{coordinates} $n$ and the \emph{indices} $idx$,
+    we have to implement the recursive formula
+  $$
+    \left\{
+    \begin{array}{l}
+      g_n = g_{n-1} * dims_n + idx_{n-1};\\
+      g_0 = index_0
+    \end{array}
+    \right.
+  $$
 
-\begin{frame}[fragile]\frametitle{Example II: Strides Computation}
-  Recursive constexpr member function to compute the strides
-  \begin{Cpplisting}[: strides computation ]{}
-template<int First, int ... Indices, typename First_Int, typename ... Ints>
-constexpr int idx_impl(std::integer_sequence< int,  First, Indices ... > , First_Int first_, Ints ... indices) const {
-  return (sizeof ... (Indices) > 0)
-  ? first_ + m_dims[First] * idx_impl(std::integer_sequence<int, Indices ...>(), indices ...)
-  : first_;
+  }
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Example II: Storage Info}
+  $$
+      g_n = g_{n-1} * dims_n + index_{n-1};
+  $$
+  \begin{Cpplisting}[: strides.cpp]{}
+template<int Current
+         , int ... RemainingIndices
+         , typename CurrentCoord
+         , typename ... RemainingCoords>
+constexpr int idx_impl(
+        std::integer_sequence< int,  Current, RemainingIndices ... >
+        , CurrentCoord first_coord_
+        , RemainingCoords ... coords_) const {
+  return first_coord_
+  + m_dims[Current]
+  * idx_impl(std::integer_sequence<int, RemainingIndices ...>(), coords_ ...);
 }
   \end{Cpplisting}
 \end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Example II: Storage Info}
+$$
+  g_0 = index_0
+$$
+  \begin{Cpplisting}[: stop\_rec.cpp]{}
+template<int Index, typename Coord>
+constexpr int idx_impl(std::integer_sequence< int, Index > , Coord coord_) const{
+  return coord_;
+}
+  \end{Cpplisting}
+\end{frame}
+
+%% \begin{frame}[fragile]\frametitle{Example II: Strides Computation}
+%%   Recursive constexpr member function to compute the strides
+%%   \begin{Cpplisting}[: strides computation ]{}
+%% template<int First, int ... Indices, typename First_Int, typename ... Ints>
+%% constexpr int idx_impl(std::integer_sequence< int,  First, Indices ... > , First_Int first_, Ints ... indices) const {
+%%   return (sizeof ... (Indices) > 0)
+%%   ? first_ + m_dims[First] * idx_impl(std::integer_sequence<int, Indices ...>(), indices ...)
+%%   : first_;
+%% }
+%%   \end{Cpplisting}
+%% \end{frame}
 
 \begin{frame}[fragile]\frametitle{Example II: Main}
   \begin{Cpplisting}[: main ]{}
@@ -688,6 +781,7 @@ int main(){
     static_assert(c_.index(0,0,1,0,0)==3*2, "error");
     static_assert(c_.index(0,0,0,1,0)==4*3*2, "error");
     static_assert(c_.index(0,0,0,0,1)==5*4*3*2, "error");
+}
   \end{Cpplisting}
 \end{frame}
 
