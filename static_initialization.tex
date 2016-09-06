@@ -1,0 +1,397 @@
+
+\documentclass[aspectratio=43]{beamer}
+% Theme works only with a 4:3 aspect ratio
+\usetheme{CSCS}
+
+% define footer text
+\newcommand{\footlinetext}{Insert\_Footer}
+
+% Select the image for the title page
+\newcommand{\picturetitle}{cscs_images/image3.pdf}
+%\newcommand{\picturetitle}{cscs_images/image5.pdf}
+%\newcommand{\picturetitle}{cscs_images/image6.pdf}
+
+
+% Please use the predifined colors:
+% cscsred, cscsgrey, cscsgreen, cscsblue, cscsbrown, cscspurple, cscsyellow, cscsblack, cscswhite
+
+\author{Paolo Crosetto, C2SM/CSCS}
+\title{Static Variable Initialization}
+\subtitle{Advanced C++ for HPC}
+\date{\today}
+
+\begin{document}
+
+% TITLE SLIDE
+\cscstitle
+
+% EMPTY SLIDE
+%% \begin{frame}
+%% \end{frame}
+
+% TABLE OF CONTENT SLIDE
+% All options for table of contents:
+% currentsection, currentsubsection, firstsection=xx, hideallsubsections, hideothersubsections, part=xx, pausesections, pausesubsections, sections=xx, sections={xx-yy}, sections={xx,yy}
+%\cscstableofcontents[hideallsubsections]{Title}
+\cscstableofcontents{Initialization of Static Variable}
+
+\begin{frame}[fragile]\frametitle{Static Variables}
+  \begin{itemize}
+    \item Are initialized when the program starts (before all other variables);
+    \item Are deleted whe the program ends;
+    \item Often used in factory or singleton design patterns;
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Variables Initialization}
+  Guess the output:
+
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct S {
+    static int m_c;
+};
+struct D{
+    static int m_d ;
+};
+int S::m_c = 5;
+int D::m_d = 10 * S::m_c;
+int main(){
+    std::cout << "m_d = " << D::m_d << '\n';
+    std::cout << "m_c = " << S::m_c << '\n';}
+\end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Variables Initialization}
+Guess the output: \textcolor{cscsgreen}{OK}
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct S {
+    static int m_c;
+};
+struct D{
+    static int m_d ;
+};
+int S::m_c = 5;
+int D::m_d = 10 * S::m_c;
+int main(){
+    std::cout << "m_d = " << D::m_d << '\n'; //50
+    std::cout << "m_c = " << S::m_c << '\n';}//5
+\end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Variables Initialization}
+Guess the output: \textcolor{cscsgreen}{Independent of program order}
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct S {
+    static int m_c;
+};
+struct D{
+    static int m_d ;
+};
+int D::m_d = 10 * S::m_c;
+int S::m_c = 5;
+int main(){
+    std::cout << "m_d = " << D::m_d << '\n'; //50
+    std::cout << "m_c = " << S::m_c << '\n';}//5
+\end{Cpplisting}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Static Variables Initialization}
+Guess the output: \textcolor{cscsgreen}{OK}
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct F{
+    static int m_f ;
+};
+struct D{
+    static int m_d ;
+};
+struct S {
+    static int m_c;
+};
+int S::m_c = 5;
+int F::m_f = 10 * D::m_d;
+int D::m_d = 10 * S::m_c;
+int main(){
+    std::cout << "m_f = " << F::m_f << '\n'; //500
+    std::cout << "m_d = " << D::m_d << '\n'; //50
+    std::cout << "m_c = " << S::m_c << '\n';}//5
+\end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Variables Initialization}
+Guess the output: \textcolor{cscsred}{NOT OK}, depending on initialization order
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct F{
+    static int m_f ;
+};
+struct D{
+    static int m_d ;
+};
+struct S {
+    static int m_c;
+};
+int F::m_f = 10 * D::m_d;
+int D::m_d = 10 * S::m_c;
+int S::m_c = 5;
+int main(){
+    std::cout << "m_f = " << F::m_f << '\n';  // 0
+    std::cout << "m_d = " << D::m_d << '\n';  // 50
+    std::cout << "m_c = " << S::m_c << '\n';} // 5
+\end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Comments}
+  \begin{definition}[Translation Unit]
+    consists in all the code required to compile a cpp file (all the headers).
+  \end{definition}
+
+  \begin{itemize}
+  \item Initialization of non-trivial static variable can be painful.
+  \item If the static variables are in different translation units, their initialization order is arbitrary: cannot have static variables depending on each other (known as \alert6{static order initialization fiasco});
+  \item Even if they are in the same translation uint, you can get surprises
+  \end{itemize}
+
+  How to solve this problem?
+  \begin{itemize}
+  \item Avoid using static variables;
+  \item Or use constant initialization if the static variables are constants;
+  \item Or initialize the variables on first touch.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Constant Initialization}
+  \verb1m_f1, \verb1m_d1, \verb1m_c1 are constant?
+  %% \onslide<1>{
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct F{
+    static int m_f ;
+};
+struct D{
+    static int m_d ;
+};
+struct S {
+    static int m_c;
+};
+int F::m_f = 10 * D::m_d;
+int D::m_d = 10 * S::m_c;
+int S::m_c = 5;
+int main(){
+    std::cout << "m_f = " << F::m_f << '\n'; // 0
+    std::cout << "m_d = " << D::m_d << '\n'; // 50
+    std::cout << "m_c = " << S::m_c << '\n';}// 5
+\end{Cpplisting}
+%% }
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Constant Initialization}
+  \textcolor{cscsgreen}{YES}
+  %% \onslide<1>{
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct F{
+    static constexpr int m_f = 10 * D::m_d ;
+};
+struct D{
+    static constexpr int m_d = 10 * S::m_c ;
+};
+struct S {
+    static constexpr int m_c = 5;
+};
+constexpr int F::m_f;
+constexpr int D::m_d;
+constexpr int S::m_c;
+int main(){
+    std::cout << "m_f = " << F::m_f << '\n'; // 500
+    std::cout << "m_d = " << D::m_d << '\n'; // 50
+    std::cout << "m_c = " << S::m_c << '\n';}// 5
+\end{Cpplisting}
+%% }
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{First Touch Initialization}
+  \verb1m_f1, \verb1m_d1, \verb1m_c1 are \textcolor{cscsred}{NOT} constant:
+  %% \onslide<1>{
+\begin{Cpplisting}[: static\_init.cpp]{}
+static int D(); //forward declaration
+static int S();
+
+static int F(){
+    static int m_f=10 * D() ;
+    return m_f;
+}
+static int D(){
+    static int m_d = 10 * S() ;
+    return m_d;
+}
+static int S() {
+    static int m_c=5;
+    return m_c;
+}
+int main(){
+    std::cout << "m_f = " << F() << '\n';       //500
+    std::cout << "m_d = " << D() << '\n';//50
+    std::cout << "m_c = " << S() << '\n';} //5
+\end{Cpplisting}
+%% }
+\end{frame}
+
+\begin{frame}\frametitle{First Touch Initialization}
+  In the first touch initialization the variables are static defined locally in a function body:
+  \begin{itemize}
+  \item They are instantiated when the function gets called (they are not instantiated when not used);
+  \item They are deleted when the program ends, like other static variables.
+  \end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]\frametitle{Static Initialization}
+\begin{Cpplisting}[: init\_static.hpp]{}
+template<typename T>
+struct register_product{
+    static bool reg;
+};
+\end{Cpplisting}
+\begin{Cpplisting}[: init\_static.cpp]{}
+#include "init_static.hpp"
+#include <iostream>
+template<> bool register_product<double>::reg = [](){std::cout<<"initializing double\n"; return true;}();
+template<> bool register_product<float>::reg = [](){std::cout<<"initializing float\n"; return true;}();
+\end{Cpplisting}
+\begin{Cpplisting}[: test\_static.cpp]{}
+#include <iostream>
+#include "init_static.hpp"
+int main()
+{
+  std::cout<<register_product<float>::reg<<register_product<double>::reg<<"\n";
+}
+\end{Cpplisting}
+Output? (\verb1g++ init_static.cpp test_static.cpp1)
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Initialization}
+\begin{Cpplisting}[: init\_static.hpp]{}
+template<typename T>
+struct register_product{
+    static bool reg;
+};
+\end{Cpplisting}
+\begin{Cpplisting}[: init\_static.cpp]{}
+#include "init_static.hpp"
+#include <iostream>
+template<> bool register_product<double>::reg = [](){std::cout<<"initializing double\n"; return true;}();
+template<> bool register_product<float>::reg = [](){std::cout<<"initializing float\n"; return true;}();
+\end{Cpplisting}
+\begin{Cpplisting}[: test\_static.cpp]{}
+#include <iostream>
+#include "init_static.hpp"
+int main()
+{
+  //std::cout<<register_product<float>::reg<<register_product<double>::reg<<"\n";
+}
+\end{Cpplisting}
+And now? (\verb1g++ init_static.cpp test_static.cpp1)
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Initialization}
+  All static variables get initialized when the program starts, even when they are not uesd anywhere!
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Initialization}
+  Suppose you are developing a library: the user writes the main file, and you register the products in a separate compilation unit:
+
+  \begin{onlyenv}<1>
+\begin{Shelllisting}{}
+> g++ -c init_static.cpp -fPIC -o libs.o
+
+
+
+
+.
+\end{Shelllisting}
+  \end{onlyenv}
+  \begin{onlyenv}<2>
+\begin{Shelllisting}{}
+> g++ -c init_static.cpp -fPIC -o libs.o
+> g++ -shared -o libs.so libs.o
+
+
+
+.
+\end{Shelllisting}
+  \end{onlyenv}
+  \begin{onlyenv}<3>
+\begin{Shelllisting}{}
+> g++ -c init_static.cpp -fPIC -o libs.o
+> g++ -shared -o libs.so libs.o
+> g++ test_static.cpp -O3 -L. libs.so
+
+
+.
+\end{Shelllisting}
+  \end{onlyenv}
+  \begin{onlyenv}<4>
+\begin{Shelllisting}{}
+> g++ -c init_static.cpp -fPIC -o libs.o
+> g++ -shared -o libs.so libs.o
+> g++ test_static.cpp -O3 -L. libs.so
+> ./a.out
+initialize float
+initialize double
+\end{Shelllisting}
+  \end{onlyenv}
+\uncover<4>{It still works. Awesome: the user does not have to manually register float and double.}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Initialization}
+  Suppose that the user wants to compile your library statically, instead of dynamically:
+
+  \begin{onlyenv}<1>
+\begin{Shelllisting}{}
+> g++ -c init_static.cpp -o libs.o
+
+
+.
+\end{Shelllisting}
+  \end{onlyenv}
+  \begin{onlyenv}<2>
+\begin{Shelllisting}{}
+> g++ -c init_static.cpp -o libs.o
+> ar rvs libs.a libs.o
+
+.
+\end{Shelllisting}
+  \end{onlyenv}
+  \begin{onlyenv}<3>
+\begin{Shelllisting}{}
+> g++ -c init_static.cpp -o libs.o
+> ar rvs libs.a libs.o
+> g++ test_static.cpp -O3 -L. libs.a
+.
+\end{Shelllisting}
+  \end{onlyenv}
+  \begin{onlyenv}<4>
+\begin{Shelllisting}{}
+> g++ -c init_static.cpp -o libs.o
+> ar rvs libs.a libs.o
+> g++ test_static.cpp libs.a
+> ./a.out
+\end{Shelllisting}
+  \end{onlyenv}
+\uncover<4>{Does not work: the linker has removed the static symbols because he knows they won't be used in
+the executable.}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Take Home Message}
+
+  \begin{itemize}
+  \item Static variable initialization is difficult to debug (happens before the program starts),
+    so try to avoid using static variables with compicated constructors;
+  \item Use constant initialization when possible;
+  \item Use first touch initialization otherwise;
+  \item Do not rely on static initialization side-effects, it is not portable.
+  \end{itemize}
+\end{frame}
+
+\end{document}

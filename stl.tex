@@ -1,0 +1,697 @@
+\documentclass[aspectratio=43]{beamer}
+% Theme works only with a 4:3 aspect ratio
+\usetheme{CSCS}
+
+% define footer text
+\newcommand{\footlinetext}{P. Crosetto}
+
+% Select the image for the title page
+\newcommand{\picturetitle}{cscs_images/image3.pdf}
+%\newcommand{\picturetitle}{cscs_images/image5.pdf}
+%\newcommand{\picturetitle}{cscs_images/image6.pdf}
+
+
+% Please use the predifined colors:
+% cscsred, cscsgrey, cscsgreen, cscsblue, cscsbrown, cscspurple, cscsyellow, cscsblack, cscswhite
+
+\author{Paolo Crosetto, C2SM/CSCS}
+\title{STL overview}
+\subtitle{Advanced C++ for HPC}
+\date{\today}
+
+\begin{document}
+
+% TITLE SLIDE
+\cscstitle
+
+% EMPTY SLIDE
+%% \begin{frame}
+%% \end{frame}
+
+% TABLE OF CONTENT SLIDE
+% All options for table of contents:
+% currentsection, currentsubsection, firstsection=xx, hideallsubsections, hideothersubsections, part=xx, pausesections, pausesubsections, sections=xx, sections={xx-yy}, sections={xx,yy}
+%\cscstableofcontents[hideallsubsections]{Title}
+\cscstableofcontents{Standard Template Library (STL) Overview}
+
+\section{Motivations}
+
+\begin{frame}[fragile]\frametitle{Motivations}
+  STL components:
+  \begin{itemize}
+  \item containers
+  \item iterators
+  \item algorithms
+  \item tuple
+  \item utility
+  \item threads
+  \item smart pointers
+  \item regexp
+  \item I/O
+  \item Exceptions
+  \item More ...
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Motivations II}
+  We will focus in this section on:
+  \begin{itemize}
+  \item containers,
+  \item iterators,
+  \item algorithms,
+  \item tuple.
+  \end{itemize}
+\end{frame}
+
+\section{Containers}
+
+\begin{frame}[fragile]\frametitle{std::array}
+  std::array can be implemented as an \emph{aggregator}.
+  \begin{itemize}
+  \item no overheads w.r.t. C arrays
+  \item static size (compiler error when out-of-bounds)
+  \item constant-time access, linear-time swap
+  \item can be constexpr
+  \item swap does a deep copy
+  \end{itemize}
+  \begin{Cpplisting}[: std::array]{}
+constexpr array<int, 5> arr_{0,1,2,3,4};
+static_assert(arr_[2] == get<2>(arr_) == 2, "error");
+static_assert(arr_.size() == 5, "error");
+static_assert(arr_.back() == 4, "error");
+static_assert(arr_.front() == 0, "error");
+array<int, 2> arr1_{1,0}, arr2_{0,1};
+arr2_.swap(arr1_); //deep copy!!
+  \end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{std::vector}
+  \begin{itemize}
+  \item resizable set of elements of the same type
+  \item faster pushing/popping at the end (constant)
+  \item contiguous in memory (fast access/iteration, may be expensive to resize)
+  \item constant time random access
+  \item different implementation for \verb1std::vector<bool>1
+  \item \verb1capacity1, \verb1shrink_to_fit1
+  \end{itemize}
+  \begin{Cpplisting}[: std::vector]{}
+std::vector< char > v_(2001);
+std::cout<<v_.capacity()<<" "; // 2001
+v_.push_back('b');
+std::cout<<v_.capacity()<<" "; // 4002
+v_.shrink_to_fit();
+std::cout<<v_.capacity()<<"\n"; // 2002
+  \end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{std::vector of bool, std::bitset}
+  \begin{itemize}
+  \item special optimized implementation (stores coalescing bits)
+  \item cannot take address of elements
+  \item not thread safe (as opposed as all other containers)
+  \item use \verb1std::bitset1 if the size is static
+  \item \verb1std::bitset1 is constexpr constructable
+  \end{itemize}
+\begin{onlyenv}<1>
+  \begin{Cpplisting}[: vector\_bool.cpp]{}
+std::vector< bool > v_={true, false, true};
+std::cout<<v_.size()<<"\n";
+constexpr std::bitset<3> b_(0b101);
+std::cout<<sizeof(v_)<<" != "<<sizeof(b_)<<"\n";
+std::cout<<b_[2]<<" = "<<v_[2]<<"\n";
+static_assert(b_[1]==0, "");
+  \end{Cpplisting}
+\end{onlyenv}
+\begin{onlyenv}<2>
+  \begin{Cpplisting}[: vector\_bool.cpp]{}
+std::vector< bool > v_={true, false, true};
+std::cout<<v_.size()<<"\n"; // 3
+constexpr std::bitset<3> b_(0b101);
+std::cout<<sizeof(v_)<<" != "<<sizeof(b_)<<"\n"; // 3 =! 8
+std::cout<<b_[2]<<" = "<<v_[2]<<"\n"; // 1 = 1
+static_assert(b_[1]==0, "");
+  \end{Cpplisting}
+\end{onlyenv}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{std::deque}
+  \verb1std::dequeue1: double ended queue, push and pop from both sides
+  \begin{itemize}
+  \item similar to \verb1std::vector1 but:
+  \item not contiguous in memory
+  \item efficiently resizable on both ends
+  \item constant time random access
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{deque vs vector}
+\begin{onlyenv}<1>
+  \begin{Cpplisting}[: deque.cpp]{}
+std::deque< int > l_(1e8);
+for(auto i=1; i < 1e8; i++){
+  l_.push_back(8);
+}
+  \end{Cpplisting}
+  \begin{Cpplisting}[: vector\_vs\_deque.cpp]{}
+std::vector< int > l_(1e8);
+for(auto i=1; i < 1e8; i++){
+  l_.push_back(8);
+}
+  \end{Cpplisting}
+\end{onlyenv}
+
+\begin{onlyenv}<2->
+  \begin{Cpplisting}[: deque.cpp]{}
+std::deque< int > l_(1e5);
+for(auto i=1; i < 1e5; i++){
+  l_.insert(l_.begin(), 8);
+}
+  \end{Cpplisting}
+  \begin{Cpplisting}[: vector\_vs\_deque.cpp]{}
+std::vector< int > l_(1e5);
+for(auto i=1; i < 1e5; i++){
+  l_.insert(l_.begin(), 8);
+}
+  \end{Cpplisting}
+\end{onlyenv}
+\uncover<3>{
+  \begin{itemize}
+  \item use deque when inserting at the beginning
+  \end{itemize}
+  }
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{std::forward\_list}
+  \begin{itemize}
+  \item linked list of elements of the same type
+  \item efficient resizing or removal anywhere in the list (constant)
+  \item non contiguous in memory
+  \item slow random access (linear)
+  \item \verb1std::list1 same thing, but doubly linked list.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{list vs vector}
+  \begin{Cpplisting}[: vector.cpp]{}
+std::vector< int > l_(1e5);
+
+for(auto i=1; i < 1e5; i++){
+  l_.insert(l_.begin()+i, 8);
+}
+  \end{Cpplisting}
+
+  \begin{Cpplisting}[: list.cpp]{}
+std::list< int > l_(1e5);
+
+for(auto&& i=l_.begin(); i != l_.end(); i++){
+  l_.insert(i, 8);
+}
+  \end{Cpplisting}
+  \uncover<2>{
+    Use list:
+    \begin{itemize}
+    \item when inserting/removing in the middle of the container
+    \item when the containers are large
+    \item when the elements size is big
+    \end{itemize}
+  }
+
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{std::queue, std::stack, std::priority\_queue}
+  \begin{itemize}
+    \item they are a container adaptors (use other containers underneeth)
+    \item \verb1std::queue1: FIFO, push into one end and pop from the other
+    \item \verb1std::stack1: FILO, push and pop into/from one end
+    \item \verb1std::priority_queue1
+      \begin{itemize}
+      \item ordered container, get the largest value in constant time
+      \item slow insertion/removal (logarithmic)
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Associative containers}
+  \begin{itemize}
+    \item \verb1std::map1
+      \begin{itemize}
+        \item collection of key-value pairs, with a unique key
+      \end{itemize}
+    \item \verb1std::set1
+      \begin{itemize}
+        \item holds unique objects
+        \item like \verb1std::map1 in which the key is the element type
+      \end{itemize}
+    \item \verb1std::multiset1 \verb1std::multimap1
+      allow multiple keys with equivalent value
+    \item The default version of associative containers is \emph{ordered} (using a \verb1Compare1 template parameter). Search/insertion/removal in logarithmic time.
+    \item \emph{Unordered} versions (since C++11): search/insertion/removal in average constant time.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{map and set}
+  \begin{Cpplisting}[: map.cpp]{}
+std::map< std::string, double > m_;
+m_.emplace("first", 0.);
+m_.emplace("second", 1.);
+m_.emplace("third", 1.);
+double val=m_.at("third");
+std::cout<<val<<"\n"; // 1.
+std::cout<<"size: "<<m_.size()<<"\n"; // 3
+  \end{Cpplisting}
+
+  \begin{Cpplisting}[: set.cpp]{}
+std::set< double > m_;
+m_.insert( 0. );
+m_.insert( 1. );
+m_.insert( 1. );
+auto val=m_.find(1.);
+std::cout<<*val<<"\n"; // 1.
+std::cout<<"size: "<<m_.size()<<"\n"; // 2
+  \end{Cpplisting}
+  \uncover<2>{
+    Associative containers:
+    \begin{itemize}
+    \item Usually implemented as binary trees
+    \item Not in performance-critical regions
+    \item Optimized for searching by key
+    \end{itemize}
+  }
+
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{allocator}
+  Almost all STL containers have an allocator template parameter.
+  Can be used to
+  \begin{itemize}
+    \item customize the storage allocation policy (cf. example with std::vector)
+    \item customize the container for specific types of memory
+  \end{itemize}
+  since C++11:
+  \begin{itemize}
+  \item simplified the API for custom allocators
+  \item guaranteed that each container holds the instance of its allocator (\alert{stateful allocator possible})
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{allocator}
+  Example of stateless user-defined allocator
+  \begin{Cpplisting}[: stack allocator]{}
+template<typename T>
+struct my_allocator{
+  using value_type=T;
+  T* allocate (int n, allocator<void>::const_pointer hint=0){
+    if(n<100)
+      return static_cast<T*>(malloc(n*sizeof(T)));
+    else throw(bad_alloc());
+  }
+  void deallocate (T* p, int n){free(p);}
+};
+
+main(){
+  vector<int,  my_allocator<int> > q_({0,1,2});
+  assert(q_[2]==2);
+  //vector<int,  my_allocator<int> > q_(101); //throws bad_alloc
+}
+  \end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{allocator}
+  We can allocate on the stack
+  \begin{Cpplisting}[: stack allocator]{}
+template<typename T>
+struct my_allocator{
+  using value_type=T;
+  T* allocate (int n, allocator<void>::const_pointer hint=0){
+    if(n<100)
+      return data; else throw(bad_alloc());
+  }
+  void deallocate (T* p, int n){/*RAII*/}
+  T data[100];
+};
+
+main(){
+  vector<int,  my_allocator<int> > q_({0,1,2});
+  assert(q_[2]==2);
+  //vector<int,  my_allocator<int> > q_(101); //throws bad_alloc
+}
+  \end{Cpplisting}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Iterators}
+  We reviewed all STL containers. They work with \emph{iterators}
+
+  \alert{Why?}
+  Not all all STL containers are accessible by index (e.g. \verb1std::list1)
+
+  Iterators provide a generic way to traverse all the types of container
+
+  \begin{Cpplisting}[: iterators definition]{}
+struct Container<T>::iterator{
+  iterator(const& iterator) //copy
+  void operator =(const& iterator) //assign
+  iterator operator ++(); // pre-increment
+  iterator operator ++(int); // post-increment
+  bool operator ==(iterator); // comparison
+  bool operator !=(iterator); // comparison
+  T operator *(); // dereference
+  T * operator -> (); // dereference
+};
+  \end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Types of Iterators}
+  \begin{itemize}
+  \item input (read, increment)
+  \item output (write, increment)
+  \item forward (also multistep increment)
+  \item bidirectional (also decrements)
+  \item random (also random access)
+  \end{itemize}
+  \alert{STL algorithms work with iterators}
+  \begin{onlyenv}<1>
+  \begin{Cpplisting}[: iterators simple example]{}
+vector< int > v1_({1,6,2,7,3,5,4});
+vector< int > v2_(v1_.begin(), v1_.end());
+
+
+.
+  \end{Cpplisting}
+  \end{onlyenv}
+  \begin{onlyenv}<2>
+  \begin{Cpplisting}[: iterators simple example]{}
+vector< int > v1_({1,6,2,7,3,5,4});
+vector< int > v2_(max_element(v1_.begin(), v1_.end()), v1_.end());
+
+.
+  \end{Cpplisting}
+  \end{onlyenv}
+  \begin{onlyenv}<3->
+  \begin{Cpplisting}[: iterators simple example]{}
+vector< int > v1_({1,6,2,7,3,5,4});
+vector< int > v2_(max_element(v1_.begin(), v1_.end()), v1_.end());
+for(auto i : v2_)
+cout<<i<<" ";
+  \end{Cpplisting}
+  \end{onlyenv}
+  \uncover<4>{outputs 7 3 5 4}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Types of Iterators}
+  \begin{center}
+    Forward iterator:\\
+\only<1>{
+    \includegraphics[width=0.7\textwidth]{Images/range-begin-end.png}\\
+}
+\only<2>{
+    \includegraphics[width=0.3\textwidth]{Images/range-begin-end.png}\\
+}
+    \begin{onlyenv}<2>
+    \begin{Cpplisting}[: iterators definition]{}
+std::vector<int> v{0,1,2,3};
+for(auto i=v.begin(); i!=v.end(); ++i)
+  std::cout<<*i<<" "; // 0 1 2 3
+  \end{Cpplisting}
+\end{onlyenv}
+    Reverse iterator:\\
+    \only<1>{
+    \includegraphics[width=0.7\textwidth]{Images/range-rbegin-rend.png}
+    }
+    \only<2>{
+    \includegraphics[width=0.3\textwidth]{Images/range-rbegin-rend.png}
+    }
+    \begin{onlyenv}<2>
+    \begin{Cpplisting}[: iterators definition]{}
+std::vector<int> v{0,1,2,3};
+for(auto i=v.rbegin(); i!=v.rend(); ++i)
+  std::cout<<*i<<" "; // 3 2 1 0
+  \end{Cpplisting}
+\end{onlyenv}
+  \end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Move Iterator}
+  \begin{onlyenv}<1>
+  \begin{Cpplisting}[: move\_iterator.cpp]{}
+struct my_class{
+  my_class() = default;
+  my_class(my_class const&){std::cout<<"Copy\n";};
+  my_class(my_class &&){std::cout<<"Move\n";};
+};
+
+int main(){
+  std::vector<my_class> v(1);
+  auto it = v.begin();
+  auto moved=my_class(*it);
+}
+  \end{Cpplisting}
+Calls the copy constructor
+  \end{onlyenv}
+
+  \begin{onlyenv}<2>
+  \begin{Cpplisting}[: move\_iterator.cpp]{}
+struct my_class{
+  my_class() = default;
+  my_class(my_class const&){std::cout<<"Copy\n";};
+  my_class(my_class &&){std::cout<<"Move\n";};
+};
+
+int main(){
+  std::vector<my_class> v(1);
+  auto it = make_move_iterator(v.begin());
+  auto moved=my_class(*it);
+}
+  \end{Cpplisting}
+Calls the move constructor
+    \end{onlyenv}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Iterators invalidation}
+  The iterators for an \verb1std::vector1 get invalidated when inserting/erasing elements
+  \emph{after} the insertion point:
+
+  \begin{Cpplisting}[: vector\_invalidation.cpp]{}
+int t=0;
+std::vector< int > l_(10);
+for(auto i=l_.begin(); i != l_.end(); i++){
+  l_.insert(i, t); // segfaults
+}
+  \end{Cpplisting}
+  We can safely use the iterator return by \verb1insert1/\verb1erase1.
+
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Inserters}
+  Overload of the \verb1operator =1, all other methods are no-op.
+  \begin{itemize}
+  \item \verb1inserter1, inserts before the iterator (\verb1insert_iterator1 remains valid)
+  \begin{Cpplisting}[: inserter]{}
+std::vector<double> v{8,8};
+std::inserter i(v, v.begin());
+for(int j=0; j<5; j++)
+  i=j;
+  \end{Cpplisting}
+\item \verb1back_inserter1 (\verb1front_inserter1), inserts after the end (at the beginning)
+  \begin{Cpplisting}[: back\_inserter]{}
+std::vector<double> v{8,8};
+std::back_inserter i(v);
+for(int j=0; j<5; j++)
+  i=j;
+  \end{Cpplisting}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Emplace}
+  Constructs in-place an element using \verb1Container::allocator_traits::construct1.
+    \begin{Cpplisting}[: emplace]{}
+struct my_class{
+  my_class(my_class const&){std::cout<<"Copy\n";};
+  my_class(int, double){std::cout<<"Construct\n";};
+};
+    \end{Cpplisting}
+\begin{itemize}
+  \item \verb1emplace_back1
+  \item \verb1emplace1
+\end{itemize}
+\begin{onlyenv}<1>
+\begin{Cpplisting}[: emplace]{}
+int main(){
+  std::vector<my_class> m;
+  m.reserve(2);
+  m.emplace_back( 1,2. );
+  m.emplace_back( 1,2. );
+}
+\end{Cpplisting}
+\end{onlyenv}
+\begin{onlyenv}<2>
+\begin{Cpplisting}[: emplace]{}
+int main(){
+  std::vector<my_class> m;
+  m.reserve(2);
+  m.emplace_back( 1,2. );
+  m.emplace( m.begin(),1,2. );
+}
+    \end{Cpplisting}
+\end{onlyenv}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Other Functions}
+  \begin{itemize}
+  \item \verb1std::begin1
+  \item \verb1std::end1
+  \item \verb1std::prev1
+  \item \verb1std::next1
+  \item \verb1std::distance1
+  \end{itemize}
+    \begin{Cpplisting}[: iterators\_algebra]{}
+std::vector<int> m{0,1,2,3};
+auto it=std::begin(m);
+auto it2=std::next(it);
+assert(*it == 0);
+assert(*it2 == 1);
+assert(std::distance(it, it2)==1);
+assert(*std::prev(it2) == 0);
+assert(*std::prev(std::end(m)) == 3);
+    \end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Algorithms (using iterators)}
+  \begin{itemize}
+    \item \alert{Non-modifying sequence operations}
+     \verb1std::equal1, \verb1std::for_each1, \verb1std::find1, \verb1std::search1
+    \item \alert{Modifying sequence operations}
+     \verb1std::copy_if / std::copy1 ,
+     \verb1std::shuffle1, \verb1std::unique1, \verb1std::rotate1, \verb1std::reverse1,
+     \verb1std::transform1
+    \item Sorting operation \verb1std::sort1, \verb1std::partial_sort1
+
+    \item Minimum/Maximum operations \verb1std::min1, \verb1std::max1, \verb1std::minmax1, \verb1std::is_permutation1
+    \item Numeric operations \verb1std::iota1, \verb1std::partial_sum1, \verb1std::reduce1, \verb1std::inclusive_scan1, \verb1std::valarray1
+    \item Heap Operations, Partitioning operations, Binary search operation, Set operations
+    \item \alert{from C++17 execution policy template parameter} (\verb1parallel_policy1)
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{std::tuple}
+  Static size collection of objects of etherogeneous type (not an std::container)
+  \begin{itemize}
+    \item does NOT work with iterators
+    \item generalization of \verb1std::pair1
+    \item access by (constexpr) index using \verb1std::get1
+    \item cannot access dynamically
+    \item similar to \verb1boost::fusion::vector1
+    \item Variadic constructor
+    \item piecewise\_construct
+    \item since C++14: access by type (compilation error if the type is not unique)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{std::tuple, idea of possible implementation:}
+    \begin{Cpplisting}[: tuple]{}
+template<int Id, typename Tuple>
+constexpr auto get(Tuple t_){ return t_.template get<Tuple::size-Id>();}
+
+template<typename First, typename ... T>
+struct my_tuple : public my_tuple<T ...> {
+    using super=my_tuple<T ...>;
+    static constexpr int size = sizeof...(T)+1;
+    constexpr my_tuple(First first_, T ... rest_)
+    : super(rest_ ...), m_value(first_){}
+    template<int Id>
+    constexpr auto get(){return Id==size ? m_value
+      : super::template get<Id>();}
+    First m_value;
+};
+template<typename First>
+struct my_tuple<First> {
+    constexpr my_tuple(First first_) : m_value(first_){}
+    static constexpr int size = 1;
+    template<int Id> constexpr First get(){return m_value;}
+    First m_value;
+};
+    \end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{std::integer\_sequence}
+  We know how to transform a variadic pack into a tuple. But how do we get a variadic pack \alert{from} a tuple?
+
+\begin{Cpplisting}[: Pack to Tuple]{}
+auto tuple_ std::make_tuple(1., 'b', 2u, "ciao");
+\end{Cpplisting}
+I want to create a vector with the size of each element of the tuple, \verb~{8,1,4,8}~,
+i.e. a way to automatically obtain:
+{\tiny\verb~{sizeof(std::get<0>(myTuple)),sizeof(std::get<1>(myTuple)),sizeof(std::get<2>(myTuple)),...}~}
+
+\begin{onlyenv}<1>
+\begin{Cpplisting}[: Tuple to Pack]{}
+
+
+
+
+
+
+
+.
+\end{Cpplisting}
+\end{onlyenv}
+
+\begin{onlyenv}<2>
+\begin{Cpplisting}[: Tuple to Pack]{}
+template<typename Tuple, int ... Ids>
+std::array<int, sizeof...(Ids)>
+create_vector(Tuple& tuple_,
+              std::integer_sequence<int, Ids ...>){
+  return {sizeof(std::get<Ids>(tuple_)) ...};
+}
+
+.
+\end{Cpplisting}
+\end{onlyenv}
+
+\begin{onlyenv}<3>
+\begin{Cpplisting}[: Tuple to Pack]{}
+template<typename Tuple, int ... Ids>
+std::array<int, sizeof...(Ids)>
+create_vector(Tuple& tuple_,
+              std::integer_sequence<int, Ids ...>){
+  return {sizeof(std::get<Ids>(tuple_)) ...};
+}
+//in the main
+create_vector(tuple_, std::make_integer_sequence<int, 4>());
+\end{Cpplisting}
+\end{onlyenv}
+\end{frame}
+
+\begin{comment}
+\begin{frame}[fragile]\frametitle{std::exchange}
+
+  syntactic sugar for:
+
+\begin{Cpplisting}[: std::exchange]{}
+template<class T, class U = T>
+T exchange(T& obj, U&& new_value)
+{
+    T old_value = std::move(obj);
+    obj = std::forward<U>(new_value);
+    return old_value;
+}
+\end{Cpplisting}
+
+Like \verb1std::swap1 but using move semantic
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Parallel Experimental}
+\end{frame}
+
+\end{comment}
+
+% THANK YOU SLIDE
+\cscsthankyou{Thank you for your attention.}
+
+\end{document}
