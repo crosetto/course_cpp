@@ -86,57 +86,6 @@ int main(){
 
 \end{frame}
 
-\subsection{Limits}
-
-\begin{frame}[fragile]\frametitle{Template Limit}
-  \begin{itemize}
-    \item Template instantiation depth limit (default compiler-dependent)
-  \end{itemize}
-
-%% \onslide<1>{
-\begin{Cpplisting}[: template recursion]{}
-template <int I>
-struct sum{
-    static const long int value=I+sum<I-1>::value;
-};
-
-template <>
-struct sum<1>{
-    static const long int value=1;
-};
-
-int main(){
-    static_assert(sum<901>::value > 0, "error");
-}
-\end{Cpplisting}
-%% }
-\end{frame}
-
-
-\begin{frame}[fragile]\frametitle{Constexpr Limit}
-  \begin{itemize}
-    \item Compile-time recursion depth limit (default compiler-dependent)
-  \end{itemize}
-
-%% \onslide<2>{
-\begin{Cpplisting}[: constexpr recursion]{}
-
-
-
-
-
-
-constexpr int sum(int id){
-    return id>1 ? id+sum(id-1) : id;
-};
-
-int main(){
-    static_assert(sum(512) > 0, "error");
-}
-\end{Cpplisting}
-%% }
-\end{frame}
-
 %% \begin{frame}[fragile]\frametitle{Motivations}
 %%   We saw lot of template metaprogramming
 %%   \begin{itemize}
@@ -165,8 +114,9 @@ int main(){
 
   Meanings of the \verb1constexpr1 keyword:
   \begin{itemize}
-  \item on function return type: the fuction may or MAY NOT return a constant expression;
+  \item on function return type: the fuction \alert{may} or \alert{MAY NOT} return a constant expression
   \item on variable instance: the instance is a constant expression
+  \item when a constexpr function is used in a constant expression, it must return a constant expression
   \end{itemize}
 \begin{Cpplisting}[: example\_01.cpp]{}
   constexpr float d=13.2;
@@ -183,7 +133,7 @@ int main(){
   \item no local variables (until C++14)
   \item no if statements (until C++14)
   \item single return statement (until C++14)
-  \item no non-constexpr arguments
+  \item only literal arguments
   \item no static variables
   \item cannot be virtual
   \item see cppreference for details
@@ -287,6 +237,7 @@ int main(){
   \end{Cpplisting}
 \end{frame}
 
+
 \begin{frame}[fragile]\frametitle{STL}
   Examples of non constexpr:
   \begin{itemize}
@@ -303,6 +254,59 @@ int main(){
   \item See (e.g.) SPROUT library
   \end{itemize}
 
+\end{frame}
+
+
+
+\subsection{Limits}
+
+\begin{frame}[fragile]\frametitle{Template Limit}
+  \begin{itemize}
+    \item Template instantiation depth limit (default compiler-dependent)
+  \end{itemize}
+
+%% \onslide<1>{
+\begin{Cpplisting}[: template recursion]{}
+template <int I>
+struct sum{
+    static const long int value=I+sum<I-1>::value;
+};
+
+template <>
+struct sum<1>{
+    static const long int value=1;
+};
+
+int main(){
+    static_assert(sum<901>::value > 0, "error");
+}
+\end{Cpplisting}
+%% }
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Constexpr Limit}
+  \begin{itemize}
+    \item Compile-time recursion depth limit (default compiler-dependent)
+  \end{itemize}
+
+%% \onslide<2>{
+\begin{Cpplisting}[: constexpr recursion]{}
+
+
+
+
+
+
+constexpr int sum(int id){
+    return id>1 ? id+sum(id-1) : id;
+};
+
+int main(){
+    static_assert(sum(512) > 0, "error");
+}
+\end{Cpplisting}
+%% }
 \end{frame}
 
 \begin{comment}
@@ -556,7 +560,7 @@ struct expr_derivative<expr_times<T1, T2> >{
 template <typename T1>
 struct expr_derivative<expr_derivative<T1>>{
 
-    using value_t = decltype(D(D(T1())));
+    using value_t = expr_derivative<typename expr_derivative<T1>::value_t>;
 
     template <typename T>
     constexpr T operator() (T t_) const{
@@ -641,17 +645,17 @@ int main(){
 \begin{frame}[fragile]\frametitle{Example II: Storage}
   Formula to compute the global index:
   $$
-  g = index_0 + (dims_0)(index_1) + (dims_0dims_1)(index_2) + ...
+  g_n = index_0 + (dims_{0})(index_{1}) + (dims_{0}dims_{1})(index_{2}) + ...
   $$
   which is, for generic d dimensions
   $$
-  g = index_0 + \sum_{k=1}^{d-1}\left(\prod_{i=0}^kdims_i\right)(index_{k});
+  g_n = index_0 + \sum_{k=1}^{n-1}\left(\prod_{i=0}^{k-1}dims_i\right)(index_{k}) = index_0 + dim_1g_{n-1}
   $$
   Think recursively:
   $$
     \left\{
   \begin{array}{l}
-      g_n = g_{n-1} * dims_n + index_{n-1};\\
+      g_n = g_{n-1} * dims_{n} + index_{0};\\
       g_0 = index_0
   \end{array}
   \right.
@@ -715,7 +719,7 @@ constexpr int index(Ints ... coords_) const{
   $$
     \left\{
     \begin{array}{l}
-      g_n = g_{n-1} * dims_n + idx_{n-1};\\
+      g_n = g_{n-1} * dims_{n-1} + idx_{n};\\
       g_0 = index_0
     \end{array}
     \right.
@@ -726,7 +730,7 @@ constexpr int index(Ints ... coords_) const{
 
 \begin{frame}[fragile]\frametitle{Example II: Storage Info}
   $$
-      g_n = g_{n-1} * dims_n + index_{n-1};
+      g_n = g_{n-1} * dims_{n-1} + index_{n};
   $$
   \begin{Cpplisting}[: strides.cpp]{}
 template<int Current
