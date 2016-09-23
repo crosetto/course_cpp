@@ -2,6 +2,9 @@
 % Theme works only with a 4:3 aspect ratio
 \usetheme{CSCS}
 
+\usepackage{tikz}
+\usetikzlibrary{calc,shapes.multipart,chains,arrows,automata}
+
 % define footer text
 \newcommand{\footlinetext}{P. Crosetto}
 
@@ -34,9 +37,22 @@
 %\cscstableofcontents[hideallsubsections]{Title}
 \cscstableofcontents{Standard Template Library (STL) Overview}
 
-\section{Motivations}
+\begin{frame}[fragile]{Material}
+  Clone the github repo
+\begin{verbatim}
+git clone https://github.com/crosetto/examples_cpp.git
+\end{verbatim}
+  Most of the code snippets shown are avaliable in
+\begin{verbatim}
+examples_cpp/Code/STL/
+\end{verbatim}
+  Exercices are in
+\begin{verbatim}
+examples_cpp/Exercices/STL/
+\end{verbatim}
+\end{frame}
 
-\begin{frame}[fragile]\frametitle{Motivations}
+\begin{frame}[fragile]\frametitle{STL}
   STL components:
   \begin{itemize}
   \item containers
@@ -48,12 +64,12 @@
   \item smart pointers
   \item regexp
   \item I/O
-  \item Exceptions
+  \item exceptions
   \item More ...
   \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Motivations II}
+\begin{frame}[fragile]\frametitle{STL}
   We will focus in this section on:
   \begin{itemize}
   \item containers,
@@ -66,15 +82,15 @@
 \section{Containers}
 
 \begin{frame}[fragile]\frametitle{std::array}
-  std::array can be implemented as an \emph{aggregator}.
+  std::array is as an \emph{aggregate}.
   \begin{itemize}
   \item no overheads w.r.t. C arrays
-  \item static size (compiler error when out-of-bounds)
+  \item static size (runtime error when out-of-bounds if using \verb1at()1)
   \item constant-time access, linear-time swap
   \item can be constexpr
   \item swap does a deep copy
   \end{itemize}
-  \begin{Cpplisting}[: std::array]{}
+  \begin{Cpplisting}[: array.cpp]{}
 constexpr array<int, 5> arr_{0,1,2,3,4};
 static_assert(arr_[2] == get<2>(arr_) == 2, "error");
 static_assert(arr_.size() == 5, "error");
@@ -92,15 +108,17 @@ arr2_.swap(arr1_); //deep copy!!
   \item contiguous in memory (fast access/iteration, may be expensive to resize)
   \item constant time random access
   \item different implementation for \verb1std::vector<bool>1
-  \item \verb1capacity1, \verb1shrink_to_fit1
+  \item \verb1capacity1, \verb1shrink_to_fit1, \verb1reserve1
   \end{itemize}
-  \begin{Cpplisting}[: vector\_capacity]{}
+  \begin{Cpplisting}[: vector\_capacity.cpp]{}
 std::vector< char > v_(2001);
 std::cout<<v_.capacity()<<" "; // 2001
 v_.push_back('b');
 std::cout<<v_.capacity()<<" "; // 4002
-v_.shrink_to_fit();
+v_.shrink_to_fit(); // non-binding
 std::cout<<v_.capacity()<<"\n"; // 2002
+v_.reserve(2004); v_.push_back('d');
+std::cout<<v_.capacity()<<"\n"; // 2004
   \end{Cpplisting}
 \end{frame}
 
@@ -182,6 +200,20 @@ for(auto i=1; i < 1e5; i++){
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{std::forward\_list}
+  \begin{tikzpicture}[list/.style={rectangle split, rectangle split parts=2,
+        draw, rectangle split horizontal}, >=stealth, start chain]
+
+    \node[list,on chain] (A) {a};
+    \node[list,on chain] (B) {b};
+    \node[list,on chain] (C) {c};
+    \node[on chain,draw,inner sep=6pt] (D) {};
+    \draw (D.north east) -- (D.south west);
+    \draw (D.north west) -- (D.south east);
+    \draw[*->] let \p1 = (A.two), \p2 = (A.center) in (\x1,\y2) -- (B);
+    \draw[*->] let \p1 = (B.two), \p2 = (B.center) in (\x1,\y2) -- (C);
+    \draw[*->] let \p1 = (C.two), \p2 = (C.center) in (\x1,\y2) -- (D);
+  \end{tikzpicture}
+
   \begin{itemize}
   \item linked list of elements of the same type
   \item efficient resizing or removal anywhere in the list (constant)
@@ -195,15 +227,15 @@ for(auto i=1; i < 1e5; i++){
   \begin{Cpplisting}[: vector\_vs\_list.cpp]{}
 std::vector< int > l_(1e5);
 
-for(auto i=1; i < 1e5; i++){
-  l_.insert(l_.begin()+i, 8);
+for(auto i=0; i < 1e5; i++){
+  l_.insert(l_.begin()+2*i, 8);
 }
   \end{Cpplisting}
 
   \begin{Cpplisting}[: list.cpp]{}
 std::list< int > l_(1e5);
 
-for(auto&& i=l_.begin(); i != l_.end(); i++){
+for(auto i=l_.begin(); i != l_.end(); i++){
   l_.insert(i, 8);
 }
   \end{Cpplisting}
@@ -214,13 +246,14 @@ for(auto&& i=l_.begin(); i != l_.end(); i++){
     \item when the containers are large
     \item when the elements size is big
     \end{itemize}
+    \alert{Most of the times STL vectors are much faster!}
   }
 
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{std::queue, std::stack, std::priority\_queue}
   \begin{itemize}
-    \item they are a container adaptors (use other containers underneeth)
+    \item they are container adaptors (use other containers underneeth)
     \item \verb1std::queue1: FIFO, push into one end and pop from the other
     \item \verb1std::stack1: FILO, push and pop into/from one end
     \item \verb1std::priority_queue1
@@ -240,7 +273,7 @@ for(auto&& i=l_.begin(); i != l_.end(); i++){
     \item \verb1std::set1
       \begin{itemize}
         \item holds unique objects
-        \item like \verb1std::map1 in which the key is the element type
+        \item like \verb1std::map1 in which the key is also the element
       \end{itemize}
     \item \verb1std::multiset1 \verb1std::multimap1
       allow multiple keys with equivalent value
@@ -253,10 +286,11 @@ for(auto&& i=l_.begin(); i != l_.end(); i++){
 \begin{frame}[fragile]\frametitle{map and set}
   \begin{Cpplisting}[: map.cpp]{}
 std::map< std::string, double > m_;
-m_.emplace("first", 0.);
-m_.emplace("second", 1.);
-m_.emplace("third", 1.);
-double val=m_.at("third");
+m_.insert(std::make_pair("first", 0.));
+m_.insert(std::make_pair("second", 1.));
+m_.insert(std::make_pair("third", 1.));
+m_.insert(std::make_pair("third", 10.));
+double val=m_.find("third")->second;
 std::cout<<val<<"\n"; // 1.
 std::cout<<"size: "<<m_.size()<<"\n"; // 3
   \end{Cpplisting}
@@ -271,15 +305,95 @@ std::cout<<*val<<"\n"; // 1.
 std::cout<<"size: "<<m_.size()<<"\n"; // 2
   \end{Cpplisting}
   \uncover<2>{
-    Associative containers:
+    \begin{columns}
+      \begin{column}{0.6\textwidth}
+        \centering{Associative containers:}
     \begin{itemize}
     \item Usually implemented as binary trees
-    \item Not in performance-critical regions
-    \item Optimized for searching by key
     \end{itemize}
+      \end{column}
+      \begin{column}{0.7\textwidth}
+        \begin{itemize}
+        \item Not in performance-critical regions
+        \item Optimized for searching by key
+        \end{itemize}
+      \end{column}
+    \end{columns}
   }
 
 \end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Emplace}
+
+  \begin{Cpplisting}[: emplace signature]{}
+template< class... Args >
+iterator emplace( const_iterator pos, Args&&... args );
+  \end{Cpplisting}
+Inserts a new element into the container directly before pos
+  \begin{Cpplisting}[: emplace.cpp]{}
+struct my_class{
+  my_class(my_class const&){std::cout<<"Copy\n";};
+  my_class(int, double){std::cout<<"Construct\n";};
+};
+    \end{Cpplisting}
+\begin{itemize}
+  \item \verb1emplace_back1
+  \item \verb1emplace1
+\end{itemize}
+\begin{onlyenv}<1>
+\begin{Cpplisting}[: emplace.cpp]{}
+int main(){
+  std::vector<my_class> m;
+  m.reserve(2);
+  m.push_back( my_class(1,2.) );
+  m.push_back( my_class(1,2.) );
+}
+\end{Cpplisting}
+\end{onlyenv}
+\begin{onlyenv}<2>
+\begin{Cpplisting}[: emplace.cpp]{}
+int main(){
+  std::vector<my_class> m;
+  m.reserve(2);
+  m.push_back( my_class(1,2.) ); // construct and copy
+  m.push_back( my_class(1,2.) ); // construct and copy
+}
+\end{Cpplisting}
+\end{onlyenv}
+\begin{onlyenv}<3>
+\begin{Cpplisting}[: emplace.cpp]{}
+int main(){
+  std::vector<my_class> m;
+  m.reserve(2);
+  m.emplace_back( 1,2. );
+  m.emplace_back( 1,2. );
+}
+\end{Cpplisting}
+\end{onlyenv}
+\begin{onlyenv}<4>
+\begin{Cpplisting}[: emplace.cpp]{}
+int main(){
+  std::vector<my_class> m;
+  m.reserve(2);
+  m.emplace_back( 1,2. ); // construct
+  m.emplace_back( 1,2. ); // construct
+}
+\end{Cpplisting}
+\end{onlyenv}
+\begin{onlyenv}<5>
+\begin{Cpplisting}[: emplace.cpp]{}
+int main(){
+  std::vector<my_class> m;
+  m.reserve(2);
+  m.emplace_back( 1,2. ); // construct
+  m.emplace( m.begin(),1,2. ); // ??
+}
+    \end{Cpplisting}
+\end{onlyenv}
+\end{frame}
+
+\section{Allocator}
 
 \begin{frame}[fragile]\frametitle{allocator}
   Almost all STL containers have an allocator template parameter.
@@ -318,7 +432,15 @@ main(){
   \end{Cpplisting}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{allocator}
+\begin{frame}[fragile]\frametitle{Exercice}
+  Modify the allocator on the previous slide
+  (you can find it in \verb~cpp_examples/Exercices/STL/allocator~), so that it allocates on the
+  stack instead of the heap.
+
+\end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Solution}
   We can allocate on the stack
   \begin{Cpplisting}[: stack.cpp]{}
 template<typename T>
@@ -340,6 +462,7 @@ main(){
   \end{Cpplisting}
 \end{frame}
 
+\section{Iterators}
 
 \begin{frame}[fragile]\frametitle{Iterators}
   We reviewed all STL containers. They work with \emph{iterators}
@@ -401,7 +524,7 @@ cout<<i<<" ";
 \end{frame}
 
 
-\begin{frame}[fragile]\frametitle{Types of Iterators}
+\begin{frame}[fragile]\frametitle{Generic API}
   \begin{center}
     Forward iterator:\\
 \only<1>{
@@ -473,18 +596,594 @@ Calls the move constructor
 
 \begin{frame}[fragile]\frametitle{Iterators invalidation}
   The iterators for an \verb1std::vector1 get invalidated when inserting/erasing elements
-  \emph{after} the insertion point:
+  \emph{before} the iteration point, or when the vector is resized:
 
+  \begin{onlyenv}<1>
   \begin{Cpplisting}[: vector\_invalidation.cpp]{}
-int t=0;
+int t=1;
+std::list< int > l_(10);
+for(auto i=l_.begin(); i != l_.end(); i++){
+  l_.insert(i, t); // OK
+}
+  \end{Cpplisting}
+  \end{onlyenv}
+  \begin{onlyenv}<2-3>
+  \begin{Cpplisting}[: vector\_invalidation.cpp]{}
+int t=1;
 std::vector< int > l_(10);
 for(auto i=l_.begin(); i != l_.end(); i++){
   l_.insert(i, t); // segfaults
 }
   \end{Cpplisting}
-  We can safely use the iterator return by \verb1insert1/\verb1erase1.
+  \end{onlyenv}
+
+  \begin{onlyenv}<4>
+  \begin{Cpplisting}[: vector\_invalidation.cpp]{}
+int t=1;
+std::vector< int > l_(10);
+for(auto i=l_.begin(); i != l_.end(); i+=2){
+  i=l_.insert(i, t);
+}
+  \end{Cpplisting}
+  \end{onlyenv}
+
+  \uncover<3->{because the \alert{end() iterator gets moved at every iteration}.
+
+    and because the \alert{iterator i gets invalidated}.}
+
+  \uncover<4->{we can safely use the iterator \alert{returned by insert}.}
 
 \end{frame}
+
+
+\begin{frame}[fragile]\frametitle{Iterators invalidation}
+  STL List:
+
+  \vspace{1cm}
+  \begin{tikzpicture}[list/.style={rectangle split, rectangle split parts=2,
+        draw, rectangle split horizontal}, >=stealth, start chain]
+
+    \node[list,on chain] (A) {0};
+    \node[state] (It) [above of=A] {it};
+    \node[list,on chain] (B) {0};
+    \node[list,on chain] (C) {0};
+    \node[on chain,draw,inner sep=6pt] (D) {};
+    \draw (D.north east) -- (D.south west);
+    \draw (D.north west) -- (D.south east);
+    \draw[*->] let \p1 = (A.two), \p2 = (A.center) in (\x1,\y2) -- (B);
+    \draw[*->] let \p1 = (B.two), \p2 = (B.center) in (\x1,\y2) -- (C);
+    \draw[*->] let \p1 = (C.two), \p2 = (C.center) in (\x1,\y2) -- (D);
+  \end{tikzpicture}
+
+  \vspace{1cm}
+
+  Iterators do not get invalidated
+
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Iterators invalidation}
+  STL List:
+
+  \vspace{1cm}
+
+  \begin{tikzpicture}[list/.style={rectangle split, rectangle split parts=2,
+        draw, rectangle split horizontal}, >=stealth, start chain]
+
+    \node[list,on chain] (S) {1};
+    \node[list,on chain] (A) [above of=S] {0};
+    \node[state] (It) [above of=A] {it};
+    \node[list,on chain] (B) [right of=A] {0};
+    \node[list,on chain] (C) {0};
+    \node[on chain,draw,inner sep=6pt] (D) {};
+    \draw (D.north east) -- (D.south west);
+    \draw (D.north west) -- (D.south east);
+    \draw[*->] let \p1 = (S.two), \p2 = (S.center) in (\x1,\y2) -- (A);
+    \draw[*->] let \p1 = (A.two), \p2 = (A.center) in (\x1,\y2) -- (B);
+    \draw[*->] let \p1 = (B.two), \p2 = (B.center) in (\x1,\y2) -- (C);
+    \draw[*->] let \p1 = (C.two), \p2 = (C.center) in (\x1,\y2) -- (D);
+  \end{tikzpicture}
+
+  \vspace{1cm}
+
+  Iterators do not get invalidated
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Iterators invalidation}
+  STL List:
+
+    \vspace{1cm}
+
+  \begin{tikzpicture}[list/.style={rectangle split, rectangle split parts=2,
+        draw, rectangle split horizontal}, >=stealth, start chain]
+
+    \node[list,on chain] (S) {1};
+    \node[list,on chain] (A) [above of=S]  {0};
+    \node[list,on chain] (E) [below of=A]  {1};
+    \node[list,on chain] (B) [right of=A]  {0};
+    \node[state] (It) [above of=B] {it};
+    \node[list,on chain] (C) {0};
+    \node[on chain,draw,inner sep=6pt] (D) {};
+    \draw (D.north east) -- (D.south west);
+    \draw (D.north west) -- (D.south east);
+    \draw[*->] let \p1 = (S.two), \p2 = (S.center) in (\x1,\y2) -- (A);
+    \draw[*->] let \p1 = (A.two), \p2 = (A.center) in (\x1,\y2) -- (E);
+    \draw[*->] let \p1 = (E.two), \p2 = (E.center) in (\x1,\y2) -- (B);
+    \draw[*->] let \p1 = (B.two), \p2 = (B.center) in (\x1,\y2) -- (C);
+    \draw[*->] let \p1 = (C.two), \p2 = (C.center) in (\x1,\y2) -- (D);
+  \end{tikzpicture}
+
+    \vspace{1cm}
+
+  Iterators do not get invalidated
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Iterators invalidation}
+  STL List:
+
+  \vspace{1cm}
+
+  \begin{tikzpicture}[list/.style={rectangle split, rectangle split parts=2,
+        draw, rectangle split horizontal}, >=stealth, start chain]
+
+    \node[list,on chain] (S) {1};
+    \node[list,on chain] (A) [above of=S]  {0};
+    \node[list,on chain] (E) [below of=A]  {1};
+    \node[list,on chain] (B) [right of=A]  {0};
+    \node[list,on chain] (F) [below of=B]  {1};
+    \node[list,on chain] (C) [right of=B] {0};
+    \node[state] (It) [above of=C] {it};
+    \node[on chain,draw,inner sep=6pt] (D) {};
+    \draw (D.north east) -- (D.south west);
+    \draw (D.north west) -- (D.south east);
+    \draw[*->] let \p1 = (S.two), \p2 = (S.center) in (\x1,\y2) -- (A);
+    \draw[*->] let \p1 = (A.two), \p2 = (A.center) in (\x1,\y2) -- (E);
+    \draw[*->] let \p1 = (E.two), \p2 = (E.center) in (\x1,\y2) -- (B);
+    \draw[*->] let \p1 = (B.two), \p2 = (B.center) in (\x1,\y2) -- (F);
+    \draw[*->] let \p1 = (F.two), \p2 = (F.center) in (\x1,\y2) -- (C);
+    \draw[*->] let \p1 = (C.two), \p2 = (C.center) in (\x1,\y2) -- (D);
+  \end{tikzpicture}
+
+    \vspace{1cm}
+
+  Iterators do not get invalidated
+\end{frame}
+
+\begin{frame}\frametitle{Iterators invalidation}
+  STL vector:
+
+  \vspace{1cm}
+
+  {
+      {\color{red} \tiny \begin{tikzpicture}[scale=0.5]
+    \node[state] (It) at(0.5,1.5) {it};
+    \foreach \x in{0,...,4}
+             {
+               \draw (\x ,0,1) -- (\x ,1,1);
+               \draw (\x ,1,1) -- (\x ,1,0);
+             }
+    \foreach \x in{0,...,3}
+             {
+               \draw (\x,0,0)--(\x+1,0,0);
+             }
+             \draw (0,0 ,1) -- (4,0 ,1);
+             \draw (0,1 ,1) -- (4,1 ,1);
+             \draw (4,0 ,1) -- (4,0 ,0);
+             \draw (4,0,0 ) -- (4,1,0 );
+             \draw (0,1,0 ) -- (4,1,0 );
+             \draw (0,1,0 ) -- (0,0,0 );
+             \draw (0,0,0 ) -- (0,0,1 );
+
+
+             \fill[opacity=0.5,blue]
+                (0,0,1) -- (1,0,1)
+             -- (1,0,1) -- (1,1,1)
+             -- (1,1,1) -- (0,1,1)
+             -- (0,1,1) -- (0,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (0,1,0) -- (1,1,0)
+             -- (1,1,0) -- (1,1,1)
+             -- (1,1,1) -- (0,1,1)
+             -- (0,1,1) -- (0,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (1,0,0) -- (1,1,0)
+             -- (1,1,0) -- (1,1,1)
+             -- (1,1,1) -- (1,0,1)
+             -- (1,0,1) -- (1,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (1,0,1) -- (2,0,1)
+             -- (2,0,1) -- (2,1,1)
+             -- (2,1,1) -- (1,1,1)
+             -- (1,1,1) -- (1,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (1,1,0) -- (2,1,0)
+             -- (2,1,0) -- (2,1,1)
+             -- (2,1,1) -- (1,1,1)
+             -- (1,1,1) -- (1,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (2,0,0) -- (2,1,0)
+             -- (2,1,0) -- (2,1,1)
+             -- (2,1,1) -- (2,0,1)
+             -- (2,0,1) -- (2,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (2,0,1) -- (3,0,1)
+             -- (3,0,1) -- (3,1,1)
+             -- (3,1,1) -- (2,1,1)
+             -- (2,1,1) -- (2,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (2,1,0) -- (3,1,0)
+             -- (3,1,0) -- (3,1,1)
+             -- (3,1,1) -- (2,1,1)
+             -- (2,1,1) -- (2,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (3,0,0) -- (3,1,0)
+             -- (3,1,0) -- (3,1,1)
+             -- (3,1,1) -- (3,0,1)
+             -- (3,0,1) -- (3,0,0) -- cycle;
+
+  \end{tikzpicture}
+}
+  }
+
+\end{frame}
+
+
+\begin{frame}\frametitle{Iterators invalidation}
+  STL vector:
+
+  \vspace{1cm}
+
+  {
+      {\color{red} \tiny \begin{tikzpicture}[scale=0.5]
+          {\color{green}\node[state] (It) at(0.5,1.5) {it};}
+          \node[state] (It) at(2.5,1.8) {it+=2};
+
+     \foreach \x in{0,...,5}
+             {
+               \draw (\x ,0,1) -- (\x ,1,1);
+               \draw (\x ,1,1) -- (\x ,1,0);
+             }
+    \foreach \x in{0,...,4}
+             {
+               \draw (\x,0,0)--(\x+1,0,0);
+             }
+             \draw (0,0 ,1) -- (5,0 ,1);
+             \draw (0,1 ,1) -- (5,1 ,1);
+             \draw (5,0 ,1) -- (5,0 ,0);
+             \draw (5,0,0 ) -- (5,1,0 );
+             \draw (0,1,0 ) -- (5,1,0 );
+             \draw (0,1,0 ) -- (0,0,0 );
+             \draw (0,0,0 ) -- (0,0,1 );
+
+
+             \fill[opacity=0.5,green]
+                (0,0,1) -- (1,0,1)
+             -- (1,0,1) -- (1,1,1)
+             -- (1,1,1) -- (0,1,1)
+             -- (0,1,1) -- (0,0,1) -- cycle;
+             \fill[opacity=0.5,green]
+                (0,1,0) -- (1,1,0)
+             -- (1,1,0) -- (1,1,1)
+             -- (1,1,1) -- (0,1,1)
+             -- (0,1,1) -- (0,1,0) -- cycle;
+             \fill[opacity=0.5,green]
+                (1,0,0) -- (1,1,0)
+             -- (1,1,0) -- (1,1,1)
+             -- (1,1,1) -- (1,0,1)
+             -- (1,0,1) -- (1,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (1,0,1) -- (2,0,1)
+             -- (2,0,1) -- (2,1,1)
+             -- (2,1,1) -- (1,1,1)
+             -- (1,1,1) -- (1,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (1,1,0) -- (2,1,0)
+             -- (2,1,0) -- (2,1,1)
+             -- (2,1,1) -- (1,1,1)
+             -- (1,1,1) -- (1,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (2,0,0) -- (2,1,0)
+             -- (2,1,0) -- (2,1,1)
+             -- (2,1,1) -- (2,0,1)
+             -- (2,0,1) -- (2,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (2,0,1) -- (3,0,1)
+             -- (3,0,1) -- (3,1,1)
+             -- (3,1,1) -- (2,1,1)
+             -- (2,1,1) -- (2,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (2,1,0) -- (3,1,0)
+             -- (3,1,0) -- (3,1,1)
+             -- (3,1,1) -- (2,1,1)
+             -- (2,1,1) -- (2,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (3,0,0) -- (3,1,0)
+             -- (3,1,0) -- (3,1,1)
+             -- (3,1,1) -- (3,0,1)
+             -- (3,0,1) -- (3,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (3,0,1) -- (4,0,1)
+             -- (4,0,1) -- (4,1,1)
+             -- (4,1,1) -- (3,1,1)
+             -- (3,1,1) -- (3,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (3,1,0) -- (4,1,0)
+             -- (4,1,0) -- (4,1,1)
+             -- (4,1,1) -- (3,1,1)
+             -- (3,1,1) -- (3,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (4,0,0) -- (4,1,0)
+             -- (4,1,0) -- (4,1,1)
+             -- (4,1,1) -- (4,0,1)
+             -- (4,0,1) -- (4,0,0) -- cycle;
+
+        \end{tikzpicture}
+}
+  }
+
+  \vspace{1cm}
+
+  Iterators get invalidated
+\end{frame}
+
+
+\begin{frame}\frametitle{Iterators invalidation}
+  STL vector:
+
+  \vspace{1cm}
+
+  {
+      {\color{red} \tiny \begin{tikzpicture}[scale=0.5]
+          {\color{green}\node[state] (It) at(2.5,1.5) {it};}
+          \node[state] (It) at(4.5,1.8) {it+=2};
+   \foreach \x in{0,...,6}
+             {
+               \draw (\x ,0,1) -- (\x ,1,1);
+               \draw (\x ,1,1) -- (\x ,1,0);
+             }
+    \foreach \x in{0,...,5}
+             {
+               \draw (\x,0,0)--(\x+1,0,0);
+             }
+             \draw (0,0 ,1) -- (6,0 ,1);
+             \draw (0,1 ,1) -- (6,1 ,1);
+             \draw (6,0 ,1) -- (6,0 ,0);
+             \draw (6,0,0 ) -- (6,1,0 );
+             \draw (0,1,0 ) -- (6,1,0 );
+             \draw (0,1,0 ) -- (0,0,0 );
+             \draw (0,0,0 ) -- (0,0,1 );
+
+
+
+             \fill[opacity=0.5,green]
+                (0,0,1) -- (1,0,1)
+             -- (1,0,1) -- (1,1,1)
+             -- (1,1,1) -- (0,1,1)
+             -- (0,1,1) -- (0,0,1) -- cycle;
+             \fill[opacity=0.5,green]
+                (0,1,0) -- (1,1,0)
+             -- (1,1,0) -- (1,1,1)
+             -- (1,1,1) -- (0,1,1)
+             -- (0,1,1) -- (0,1,0) -- cycle;
+             \fill[opacity=0.5,green]
+                (1,0,0) -- (1,1,0)
+             -- (1,1,0) -- (1,1,1)
+             -- (1,1,1) -- (1,0,1)
+             -- (1,0,1) -- (1,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (1,0,1) -- (2,0,1)
+             -- (2,0,1) -- (2,1,1)
+             -- (2,1,1) -- (1,1,1)
+             -- (1,1,1) -- (1,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (1,1,0) -- (2,1,0)
+             -- (2,1,0) -- (2,1,1)
+             -- (2,1,1) -- (1,1,1)
+             -- (1,1,1) -- (1,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (2,0,0) -- (2,1,0)
+             -- (2,1,0) -- (2,1,1)
+             -- (2,1,1) -- (2,0,1)
+             -- (2,0,1) -- (2,0,0) -- cycle;
+
+             \fill[opacity=0.5,green]
+                (2,0,1) -- (3,0,1)
+             -- (3,0,1) -- (3,1,1)
+             -- (3,1,1) -- (2,1,1)
+             -- (2,1,1) -- (2,0,1) -- cycle;
+             \fill[opacity=0.5,green]
+                (2,1,0) -- (3,1,0)
+             -- (3,1,0) -- (3,1,1)
+             -- (3,1,1) -- (2,1,1)
+             -- (2,1,1) -- (2,1,0) -- cycle;
+             \fill[opacity=0.5,green]
+                (3,0,0) -- (3,1,0)
+             -- (3,1,0) -- (3,1,1)
+             -- (3,1,1) -- (3,0,1)
+             -- (3,0,1) -- (3,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (3,0,1) -- (4,0,1)
+             -- (4,0,1) -- (4,1,1)
+             -- (4,1,1) -- (3,1,1)
+             -- (3,1,1) -- (3,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (3,1,0) -- (4,1,0)
+             -- (4,1,0) -- (4,1,1)
+             -- (4,1,1) -- (3,1,1)
+             -- (3,1,1) -- (3,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (4,0,0) -- (4,1,0)
+             -- (4,1,0) -- (4,1,1)
+             -- (4,1,1) -- (4,0,1)
+             -- (4,0,1) -- (4,0,0) -- cycle;
+
+
+             \fill[opacity=0.5,blue]
+                (4+0,0,1) -- (4+1,0,1)
+             -- (4+1,0,1) -- (4+1,1,1)
+             -- (4+1,1,1) -- (4+0,1,1)
+             -- (4+0,1,1) -- (4+0,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (4+0,1,0) -- (4+1,1,0)
+             -- (4+1,1,0) -- (4+1,1,1)
+             -- (4+1,1,1) -- (4+0,1,1)
+             -- (4+0,1,1) -- (4+0,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (4+1,0,0) -- (4+1,1,0)
+             -- (4+1,1,0) -- (4+1,1,1)
+             -- (4+1,1,1) -- (4+1,0,1)
+             -- (4+1,0,1) -- (4+1,0,0) -- cycle;
+
+        \end{tikzpicture}
+}
+  }
+
+  \vspace{1cm}
+
+  Iterators get invalidated
+
+\end{frame}
+
+
+\begin{frame}\frametitle{Iterators invalidation}
+  STL vector:
+
+  \vspace{1cm}
+
+  {
+    {\color{red} \tiny \begin{tikzpicture}[scale=0.5]
+    \foreach \x in{0,...,7}
+             {
+               \draw (\x ,0,1) -- (\x ,1,1);
+               \draw (\x ,1,1) -- (\x ,1,0);
+             }
+    \foreach \x in{0,...,6}
+             {
+               \draw (\x,0,0)--(\x+1,0,0);
+             }
+             \draw (0,0 ,1) -- (7,0 ,1);
+             \draw (0,1 ,1) -- (7,1 ,1);
+             \draw (7,0 ,1) -- (7,0 ,0);
+             \draw (7,0,0 ) -- (7,1,0 );
+             \draw (0,1,0 ) -- (7,1,0 );
+             \draw (0,1,0 ) -- (0,0,0 );
+             \draw (0,0,0 ) -- (0,0,1 );
+
+             {\color{green}\node[state] (It) at(4.5,1.5) {it};}
+             \node[state] (It) at(6.5,1.8) {it+=2};
+
+             \fill[opacity=0.5,green]
+                (0,0,1) -- (1,0,1)
+             -- (1,0,1) -- (1,1,1)
+             -- (1,1,1) -- (0,1,1)
+             -- (0,1,1) -- (0,0,1) -- cycle;
+             \fill[opacity=0.5,green]
+                (0,1,0) -- (1,1,0)
+             -- (1,1,0) -- (1,1,1)
+             -- (1,1,1) -- (0,1,1)
+             -- (0,1,1) -- (0,1,0) -- cycle;
+             \fill[opacity=0.5,green]
+                (1,0,0) -- (1,1,0)
+             -- (1,1,0) -- (1,1,1)
+             -- (1,1,1) -- (1,0,1)
+             -- (1,0,1) -- (1,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (1,0,1) -- (2,0,1)
+             -- (2,0,1) -- (2,1,1)
+             -- (2,1,1) -- (1,1,1)
+             -- (1,1,1) -- (1,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (1,1,0) -- (2,1,0)
+             -- (2,1,0) -- (2,1,1)
+             -- (2,1,1) -- (1,1,1)
+             -- (1,1,1) -- (1,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (2,0,0) -- (2,1,0)
+             -- (2,1,0) -- (2,1,1)
+             -- (2,1,1) -- (2,0,1)
+             -- (2,0,1) -- (2,0,0) -- cycle;
+
+             \fill[opacity=0.5,green]
+                (2,0,1) -- (3,0,1)
+             -- (3,0,1) -- (3,1,1)
+             -- (3,1,1) -- (2,1,1)
+             -- (2,1,1) -- (2,0,1) -- cycle;
+             \fill[opacity=0.5,green]
+                (2,1,0) -- (3,1,0)
+             -- (3,1,0) -- (3,1,1)
+             -- (3,1,1) -- (2,1,1)
+             -- (2,1,1) -- (2,1,0) -- cycle;
+             \fill[opacity=0.5,green]
+                (3,0,0) -- (3,1,0)
+             -- (3,1,0) -- (3,1,1)
+             -- (3,1,1) -- (3,0,1)
+             -- (3,0,1) -- (3,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (3,0,1) -- (4,0,1)
+             -- (4,0,1) -- (4,1,1)
+             -- (4,1,1) -- (3,1,1)
+             -- (3,1,1) -- (3,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (3,1,0) -- (4,1,0)
+             -- (4,1,0) -- (4,1,1)
+             -- (4,1,1) -- (3,1,1)
+             -- (3,1,1) -- (3,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (4,0,0) -- (4,1,0)
+             -- (4,1,0) -- (4,1,1)
+             -- (4,1,1) -- (4,0,1)
+             -- (4,0,1) -- (4,0,0) -- cycle;
+
+
+             \fill[opacity=0.5,green]
+                (4+0,0,1) -- (4+1,0,1)
+             -- (4+1,0,1) -- (4+1,1,1)
+             -- (4+1,1,1) -- (4+0,1,1)
+             -- (4+0,1,1) -- (4+0,0,1) -- cycle;
+             \fill[opacity=0.5,green]
+                (4+0,1,0) -- (4+1,1,0)
+             -- (4+1,1,0) -- (4+1,1,1)
+             -- (4+1,1,1) -- (4+0,1,1)
+             -- (4+0,1,1) -- (4+0,1,0) -- cycle;
+             \fill[opacity=0.5,green]
+                (4+1,0,0) -- (4+1,1,0)
+             -- (4+1,1,0) -- (4+1,1,1)
+             -- (4+1,1,1) -- (4+1,0,1)
+             -- (4+1,0,1) -- (4+1,0,0) -- cycle;
+
+             \fill[opacity=0.5,blue]
+                (4+1,0,1) -- (4+2,0,1)
+             -- (4+2,0,1) -- (4+2,1,1)
+             -- (4+2,1,1) -- (4+1,1,1)
+             -- (4+1,1,1) -- (4+1,0,1) -- cycle;
+             \fill[opacity=0.5,blue]
+                (4+1,1,0) -- (4+2,1,0)
+             -- (4+2,1,0) -- (4+2,1,1)
+             -- (4+2,1,1) -- (4+1,1,1)
+             -- (4+1,1,1) -- (4+1,1,0) -- cycle;
+             \fill[opacity=0.5,blue]
+                (4+2,0,0) -- (4+2,1,0)
+             -- (4+2,1,0) -- (4+2,1,1)
+             -- (4+2,1,1) -- (4+2,0,1)
+             -- (4+2,0,1) -- (4+2,0,0) -- cycle;
+
+  \end{tikzpicture}
+}
+  }
+
+  \vspace{1cm}
+
+  Iterators get invalidated
+\end{frame}
+
 
 \begin{frame}[fragile]\frametitle{Inserters}
   Overload of the \verb1operator =1, all other methods are no-op.
@@ -504,40 +1203,6 @@ for(int j=0; j<5; j++)
   i=j;
   \end{Cpplisting}
   \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]\frametitle{Emplace}
-  Constructs in-place an element using \verb1Container::allocator_traits::construct1.
-    \begin{Cpplisting}[: emplace.cpp]{}
-struct my_class{
-  my_class(my_class const&){std::cout<<"Copy\n";};
-  my_class(int, double){std::cout<<"Construct\n";};
-};
-    \end{Cpplisting}
-\begin{itemize}
-  \item \verb1emplace_back1
-  \item \verb1emplace1
-\end{itemize}
-\begin{onlyenv}<1>
-\begin{Cpplisting}[: emplace]{}
-int main(){
-  std::vector<my_class> m;
-  m.reserve(2);
-  m.emplace_back( 1,2. );
-  m.emplace_back( 1,2. );
-}
-\end{Cpplisting}
-\end{onlyenv}
-\begin{onlyenv}<2>
-\begin{Cpplisting}[: emplace.cpp]{}
-int main(){
-  std::vector<my_class> m;
-  m.reserve(2);
-  m.emplace_back( 1,2. );
-  m.emplace( m.begin(),1,2. );
-}
-    \end{Cpplisting}
-\end{onlyenv}
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Other Functions}
@@ -560,23 +1225,24 @@ assert(*std::prev(std::end(m)) == 3);
     \end{Cpplisting}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Algorithms (using iterators)}
+\begin{frame}[fragile]\frametitle{Algorithms}
   \begin{itemize}
     \item \alert{Non-modifying sequence operations}
-     \verb1std::equal1, \verb1std::for_each1, \verb1std::find1, \verb1std::search1
+     \verb1equal1, \verb1for_each1, \verb1find1, \verb1search1
     \item \alert{Modifying sequence operations}
-     \verb1std::copy_if / std::copy1 ,
-     \verb1std::shuffle1, \verb1std::unique1, \verb1std::rotate1, \verb1std::reverse1,
-     \verb1std::transform1
-    \item Sorting operation \verb1std::sort1, \verb1std::partial_sort1
+     \verb1copy_if / copy1 ,
+     \verb1shuffle1, \verb1unique1, \verb1rotate1, \verb1reverse1,
+     \verb1transform1
+    \item Sorting operation \verb1sort1, \verb1partial_sort1
 
-    \item Minimum/Maximum operations \verb1std::min1, \verb1std::max1, \verb1std::minmax1, \verb1std::is_permutation1
-    \item Numeric operations \verb1std::iota1, \verb1std::partial_sum1, \verb1std::reduce1, \verb1std::inclusive_scan1, \verb1std::valarray1
+    \item Minimum/Maximum operations \verb1min1, \verb1max1, \verb1minmax1, \verb1is_permutation1
+    \item Numeric operations \verb1iota1, \verb1partial_sum1, \verb1reduce1, \verb1inclusive_scan1, \verb1valarray1
     \item Heap Operations, Partitioning operations, Binary search operation, Set operations
     \item \alert{from C++17 execution policy template parameter} (\verb1parallel_policy1)
   \end{itemize}
 \end{frame}
 
+\section{Tuple}
 
 \begin{frame}[fragile]\frametitle{std::tuple}
   Static size collection of objects of etherogeneous type (not an std::container)
@@ -586,8 +1252,7 @@ assert(*std::prev(std::end(m)) == 3);
     \item access by (constexpr) index using \verb1std::get1
     \item cannot access dynamically
     \item similar to \verb1boost::fusion::vector1
-    \item Variadic constructor
-    \item piecewise\_construct
+    \item Variadic constructors
     \item since C++14: access by type (compilation error if the type is not unique)
   \end{itemize}
       \begin{Cpplisting}[: std\_tuple.cpp]{}
@@ -608,6 +1273,22 @@ int main(){
     \end{Cpplisting}
 \end{frame}
 
+
+\begin{frame}[fragile]\frametitle{std::tuple, idea of possible implementation:}
+
+  Recursion anchor:
+  \begin{Cpplisting}[: anchor.cpp]{}
+template<typename ... T> struct my_tuple;
+
+template<typename First>
+struct my_tuple<First> {
+    constexpr my_tuple(First first_) : m_value(first_){}
+    template<int Id> constexpr First get(){return m_value;}
+    First m_value;
+};
+  \end{Cpplisting}
+\end{frame}
+
 \begin{frame}[fragile]\frametitle{std::tuple, idea of possible implementation:}
 
   \begin{itemize}
@@ -615,12 +1296,10 @@ int main(){
   \item variadic constexpr constructor;
   \end{itemize}
   \begin{Cpplisting}[: my\_tuple.cpp]{}
-template<typename ... T> struct my_tuple;
-
 template<typename First, typename ... T>
 struct my_tuple<First, T...> : public my_tuple<T ...> {
   using super=my_tuple<T ...>;
-  static constexpr int size = sizeof...(T)+1;
+  static constexpr int size = sizeof...(T);
 
   constexpr my_tuple(First first_, T ... rest_) : super(rest_ ...), m_value(first_){}
 
@@ -629,10 +1308,9 @@ struct my_tuple<First, T...> : public my_tuple<T ...> {
     \end{Cpplisting}
 \end{frame}
 
-
 \begin{frame}[fragile]\frametitle{std::tuple, idea of possible implementation:}
 
-  get method inside the tuple:
+  get member function inside the tuple:
   recursive
   \begin{Cpplisting}[: m\_get.cpp]{}
 template<int Id>
@@ -651,20 +1329,6 @@ constexpr auto get(Tuple t_){
   \end{Cpplisting}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{std::tuple, idea of possible implementation:}
-
-  Recursion anchor:
-  \begin{Cpplisting}[: anchor.cpp]{}
-template<typename First>
-struct my_tuple<First> {
-    constexpr my_tuple(First first_) : m_value(first_){}
-    static constexpr int size = 1;
-    template<int Id> constexpr First get(){return m_value;}
-    First m_value;
-};
-  \end{Cpplisting}
-\end{frame}
-
 \begin{frame}[fragile]\frametitle{Exercice:}
 
   The ternary operator (\verb1cond ? a : b1) used in the get method only works for types which can be
@@ -678,56 +1342,6 @@ int main(){
 }
     \end{Cpplisting}
 NOTE: make use of the provided \verb1constexpr_if.hpp1 header.
-\end{frame}
-
-\begin{frame}[fragile]\frametitle{std::integer\_sequence}
-  We know how to transform a variadic pack into a tuple. But how do we get a variadic pack \alert{from} a tuple?
-
-\begin{Cpplisting}[: Pack to Tuple]{}
-auto tuple_ std::make_tuple(1., 'b', 2u, "ciao");
-\end{Cpplisting}
-I want to create a vector with the size of each element of the tuple, \verb~{8,1,4,8}~,
-i.e. a way to automatically obtain:
-{\tiny\verb~{sizeof(std::get<0>(myTuple)),sizeof(std::get<1>(myTuple)),sizeof(std::get<2>(myTuple)),...}~}
-
-\begin{onlyenv}<1>
-\begin{Cpplisting}[: Tuple to Pack]{}
-
-
-
-
-
-
-
-.
-\end{Cpplisting}
-\end{onlyenv}
-
-\begin{onlyenv}<2>
-\begin{Cpplisting}[: Tuple to Pack]{}
-template<typename Tuple, int ... Ids>
-std::array<int, sizeof...(Ids)>
-create_vector(Tuple& tuple_,
-              std::integer_sequence<int, Ids ...>){
-  return {sizeof(std::get<Ids>(tuple_)) ...};
-}
-
-.
-\end{Cpplisting}
-\end{onlyenv}
-
-\begin{onlyenv}<3>
-\begin{Cpplisting}[: Tuple to Pack]{}
-template<typename Tuple, int ... Ids>
-std::array<int, sizeof...(Ids)>
-create_vector(Tuple& tuple_,
-              std::integer_sequence<int, Ids ...>){
-  return {sizeof(std::get<Ids>(tuple_)) ...};
-}
-//in the main
-create_vector(tuple_, std::make_integer_sequence<int, 4>());
-\end{Cpplisting}
-\end{onlyenv}
 \end{frame}
 
 \begin{comment}

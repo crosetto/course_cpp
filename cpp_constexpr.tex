@@ -15,7 +15,7 @@
 % cscsred, cscsgrey, cscsgreen, cscsblue, cscsbrown, cscspurple, cscsyellow, cscsblack, cscswhite
 
 \author{Paolo Crosetto, C2SM/CSCS}
-\title{The wonders of the constexpr keyword}
+\title{C++11 constexpr keyword}
 \subtitle{Advanced C++ for HPC}
 \date{\today}
 
@@ -32,7 +32,22 @@
 % All options for table of contents:
 % currentsection, currentsubsection, firstsection=xx, hideallsubsections, hideothersubsections, part=xx, pausesections, pausesubsections, sections=xx, sections={xx-yy}, sections={xx,yy}
 %\cscstableofcontents[hideallsubsections]{Title}
-\cscstableofcontents{The wonders of the constexpr keyword}
+\cscstableofcontents{C++11 constexpr keyword}
+
+\begin{frame}[fragile]{Material}
+  Clone the github repo
+\begin{verbatim}
+git clone https://github.com/crosetto/examples_cpp.git
+\end{verbatim}
+  Most of the code snippets shown are avaliable in
+\begin{verbatim}
+examples_cpp/Code/Constexpr/
+\end{verbatim}
+  Exercices are in
+\begin{verbatim}
+examples_cpp/Exercices/Constexpr/
+\end{verbatim}
+\end{frame}
 
 \section{Motivations}
 
@@ -41,31 +56,31 @@
   We want to compute the sum of the first N numbers, $\left(\sum_{i=0}^N i\right)$ both at runtime and at compile time:
   \begin{Cpplisting}[: template metafunction]{}
 int sum(int id){ // regular recursion
-    return id>1 ? id+sum(id-1) : id;
+  return id>1 ? id+sum(id-1) : id;
 };
 
 template <int I>
 struct sum{ // template recursion
-    static const long int value=I+sum<I-1>::value;
+  static const long int value=I+sum<I-1>::value;
 };
 
 template <>
 struct sum<1>{
-    static const long int value=1;
+  static const long int value=1;
 };
 
-int main(){
-    static_assert(sum<16>::value > 0, "error");
-    if(sum(argv[1]) < 0) std::cout<<"Error!\n";
+void test(int runtime){
+  static_assert(sum<16>::value > 0, "error");
+  if(sum(runtime) < 0) std::cout<<"Error!\n";
 }
 \end{Cpplisting}
 \end{frame}
 
-  \begin{frame}[fragile]{Motivation}
+\begin{frame}[fragile]{Motivation}
   We want to compute the sum of the first N numbers, $\left(\sum_{i=0}^N i\right)$ both at runtime and at compile time:
   \begin{Cpplisting}[: template metafunction]{}
 constexpr int sum(int id){ // regular recursion
-    return id>1 ? id+sum(id-1) : id;
+  return id>1 ? id+sum(id-1) : id;
 };
 
 
@@ -78,12 +93,28 @@ constexpr int sum(int id){ // regular recursion
 
 
 
-int main(){
-    static_assert(sum(16) > 0, "error");
-    if(sum(argv[1]) < 0) std::cout<<"Error!\n";
+void test(int runtime){
+  static_assert(sum(16) > 0, "error");
+  if(sum(runtime) < 0) std::cout<<"Error!\n";
 }
 \end{Cpplisting}
 
+\end{frame}
+
+\begin{frame}[fragile]{Motivation II}
+  \begin{itemize}
+  \item reduced compilation time
+  \item see \verb1example_00.cpp1
+  \item paste this in your browser:
+    \lstset{
+      basicstyle=\ttfamily,
+      columns=fullflexible,
+      keepspaces=true,
+      }
+    \begin{lstlisting}[breaklines]
+https://gcc.godbolt.org/#compilers:!((compiler:g62,options:'-std%3Dc%2B%2B11+-O3++-fconstexpr-depth%3D1000',source:'constexpr+%0A++int+sum2(int+id)%7B%0A++++return+id%3E1+%3F+id%2Bsum2(id-1)+:+id%3B%0A%7D%3B%0A%0Aint+main()%7B%0A++//constexpr+int+ret%3Dsum2(100)%3B%0A++//return+ret%3B%0A++return+sum2(100)%3B%0A%7D%0A')),filterAsm:(commentOnly:!t,directives:!t,labels:!t),version:3
+    \end{lstlisting}
+  \end{itemize}
 \end{frame}
 
 %% \begin{frame}[fragile]\frametitle{Motivations}
@@ -147,8 +178,8 @@ constexpr double f(){
 
 \begin{frame}[fragile]\frametitle{Syntax}
   \begin{onlyenv}<1-2>
-\begin{Cpplisting}[: example]{}
-constexpr int f1(std::vector<double> const& v_){
+\begin{Cpplisting}[: example\_02.cpp]{}
+constexpr int f1(std::vector<int> const& v_){
     return v_.size();
 }
 
@@ -158,14 +189,14 @@ constexpr int f1(std::vector<double> const& v_){
 
 
 int main(){
-    std_vector<int> t(1,2,3,4);
+    std::vector<int> t(1,2,3,4);
     std::cout<<f1(t)<<"\n";
 }
 \end{Cpplisting}
   \end{onlyenv}
   \only<1-2>{\uncover<2>{Vectors do not have constexpr constructor (allocated on the heap)}}
   \begin{onlyenv}<3-4>
-\begin{Cpplisting}[: example]{}
+\begin{Cpplisting}[: example\_02.cpp]{}
 template<typename ... T>
 constexpr auto f2(std::tuple<T...> const& t_){
     return std::get<2>(t_);
@@ -183,7 +214,7 @@ int main(){
   \end{onlyenv}
   \only<3-4>{\uncover<4>{Tuples have constexpr constructors, std::get is a constexpr function}}
   \begin{onlyenv}<5-6>
-\begin{Cpplisting}[: example]{}
+\begin{Cpplisting}[: example\_02.cpp]{}
 template<typename ... T>
 constexpr auto f3(std::tuple<T...> const& t_){
     bool cond=std::get<2>(t_)<std::get<1>(t_);
@@ -205,12 +236,18 @@ int main(){
 \begin{frame}[fragile]\frametitle{Syntax}
   In order to instantiate your own class as a constant expression:
   \begin{itemize}
-  \item must contain and inherit from objects with a constexpr constructor;
   \item must have a constexpr constructor;
   \item constexpr constructor must be a constexpr function (see cppreference for details)
+  \item base objects and data members must be constexpr constructable;
   \end{itemize}
 NOTE: function arguments cannot be labeled constexpr.
-  The compiler treats them as constant expressions when possible.
+The compiler treats them as constant expressions when:
+\begin{itemize}
+\item the function is used in a constant expression (e.g. to initialize it)
+\item no guarantee otherwise, up to the compiler
+\end{itemize}
+NOTE: (non-static) data members cannot be labeled constexpr.
+They are constant expressions when their object is.
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Syntax}
@@ -256,6 +293,22 @@ int main(){
 
 \end{frame}
 
+\begin{frame}[fragile]
+  \begin{itemize}\frametitle{C++17 Extension}
+  \item constexpr lambdas
+\end{itemize}
+
+\begin{Cpplisting}[: constexpr lambdas]{}
+constexpr auto f_(){return 5;}
+int main(){
+    constexpr auto f = []()->int{ return 5;};
+    static_assert(f_()==5, "error"); // this works
+    static_assert(f()==5, "error"); // this does not work
+}
+\end{Cpplisting}
+\alert{Until C++17 constexpr lambdas won't be available}
+
+\end{frame}
 
 
 \subsection{Limits}
@@ -266,7 +319,7 @@ int main(){
   \end{itemize}
 
 %% \onslide<1>{
-\begin{Cpplisting}[: template recursion]{}
+\begin{Cpplisting}[: example\_00.cpp]{}
 template <int I>
 struct sum{
     static const long int value=I+sum<I-1>::value;
@@ -291,7 +344,7 @@ int main(){
   \end{itemize}
 
 %% \onslide<2>{
-\begin{Cpplisting}[: constexpr recursion]{}
+\begin{Cpplisting}[: example\_00.cpp]{}
 
 
 
@@ -333,7 +386,7 @@ How would you write this as a template metafunction?
 \begin{frame}[fragile]\frametitle{Corner Case}
 \begin{Cpplisting}[: example\_04.cpp]{}
 constexpr int divide(int id) {
-    return id>-1 ? id/divide(id-1) : id;
+    return id>0 ? id/divide(id-1) : id;
 };
 int main(){
     static_assert(divide(4)>0, "error"); //error
@@ -351,23 +404,6 @@ gives the error:
 }
 \end{frame}
 
-\begin{frame}[fragile]
-  \begin{itemize}\frametitle{C++17 Extension}
-  \item constexpr lambdas
-\end{itemize}
-
-\begin{Cpplisting}[: constexpr lambdas]{}
-constexpr auto f_(){return 5;}
-int main(){
-    constexpr auto f = []()->int{ return 5;};
-    static_assert(f_()==5, "error"); // this works
-    static_assert(f()==5, "error"); // this does not work
-}
-\end{Cpplisting}
-\alert{Until C++17 constexpr lambdas won't be available}
-
-\end{frame}
-
 
 %% \begin{frame}[fragile]
 %%   \begin{itemize}
@@ -380,32 +416,105 @@ int main(){
 %%   \end{itemize}
 %% \end{frame}
 
-\subsection{Best Practices}
+\subsection{Corner Case}
 
 \begin{frame}[fragile]\frametitle{Check if Constant Expression}
-  trick to determine if a function returns a constant expression:
-  \alert{use the noexcept} keyword
+  trick to determine if a function returns a constant expression\uncover<2>{:
+  \alert{use the noexcept} keyword}
+\begin{onlyenv}<1>
   \begin{Cpplisting}[: example\_05.cpp]{}
 struct test{
-    int m_val;
-    constexpr test(int arg_) : m_val{arg_}{}
-    constexpr int get() const {return m_val;}
+  constexpr test(int arg_) : m_val{arg_}{}
+  constexpr int get() const {return m_val;}
+  int m_val;
 };
 int main(){
-    constexpr test t1_(5);
-    test t2_(10);
-    constexpr bool check_t1_=(noexcept(t1_.get()));
-    constexpr bool check_t2_=(noexcept(t2_.get()));
-    static_assert(check_t1_==true, "error");
-    static_assert(check_t2_==false, "error");}
+  constexpr test t1_(5);
+  test t2_(10);
+
+
+
+.
   \end{Cpplisting}
-  \verb1noexcept1 returns true for constant expressions. Works only when \verb1get1
+\end{onlyenv}
+\begin{onlyenv}<2>
+    \begin{Cpplisting}[: example\_05.cpp]{}
+struct test{
+  constexpr test(int arg_) : m_val{arg_}{}
+  constexpr int get() const {return m_val;}
+  int m_val;
+};
+int main(){
+  constexpr test t1_(5);
+  test t2_(10);
+  constexpr bool check_t1_=(noexcept(t1_.get()));
+  constexpr bool check_t2_=(noexcept(t2_.get()));
+  static_assert(check_t1_==true, "error");
+  static_assert(check_t2_==false, "error");}
+  \end{Cpplisting}
+\end{onlyenv}
+\uncover<2>{
+  noexcept returns true for constant expressions. Works only when get
   is not declared as noexcept. Otherwise:
   \begin{itemize}
   \item use static asserts to issue error when not constexpr,
   \item SFINAE if you are desperate (and you'll become more desperate).
   \end{itemize}
+  }
 \end{frame}
+
+\subsection{Integer Sequence}
+
+\begin{frame}[fragile]\frametitle{std::integer\_sequence}
+  We know how to transform a variadic pack into a tuple. But how do we get a variadic pack \alert{from} a tuple?
+
+\begin{Cpplisting}[: Pack to Tuple]{}
+auto tuple_ std::make_tuple(1., 'b', 2u, "ciao");
+\end{Cpplisting}
+I want to create a vector with the size of each element of the tuple, \verb~{8,1,4,8}~,
+i.e. a way to automatically obtain:
+{\tiny\verb~{sizeof(std::get<0>(myTuple)),sizeof(std::get<1>(myTuple)),sizeof(std::get<2>(myTuple)),...}~}
+
+\begin{onlyenv}<1>
+\begin{Cpplisting}[: tuple\_to\_pack.cpp]{}
+
+
+
+
+
+
+
+.
+\end{Cpplisting}
+\end{onlyenv}
+
+\begin{onlyenv}<2>
+\begin{Cpplisting}[: tuple\_to\_pack.cpp]{}
+template<typename Tuple, int ... Ids>
+std::array<int, sizeof...(Ids)>
+create_vector(Tuple& tuple_,
+              std::integer_sequence<int, Ids ...>){
+  return {sizeof(std::get<Ids>(tuple_)) ...};
+}
+
+.
+\end{Cpplisting}
+\end{onlyenv}
+
+\begin{onlyenv}<3>
+\begin{Cpplisting}[: tuple\_to\_pack.cpp]{}
+template<typename Tuple, int ... Ids>
+std::array<int, sizeof...(Ids)>
+create_vector(Tuple& tuple_,
+              std::integer_sequence<int, Ids ...>){
+  return {sizeof(std::get<Ids>(tuple_)) ...};
+}
+//in the main
+create_vector(tuple_, std::make_integer_sequence<int, 4>());
+\end{Cpplisting}
+\end{onlyenv}
+\end{frame}
+
 
 \section{Reusable Design Patterns}
 \subsection{Expression Templates / Automatic Differentiation}
@@ -413,19 +522,24 @@ int main(){
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   Goal:
   \begin{itemize}
-  \item define a \emph{ring} algebraic structure, i.e. 2 operations, $*$ and $+$ with usual properties;
-  \item define a differentiation rule $D$;
-  \item be able to define arbitrary univariate polynomial functions combining the operators $*$, $+$, $D$;
-  \item be able to lazily evaluate the function.
-  \item \alert{Definition} happens \alert{at compile time};
-  \item \alert{Evaluation} happens \alert{either at run time or at compile time}, depending on the argument.
+    \item
+    \begin{itemize}
+    \item define a \emph{ring} algebraic structure, i.e. 2 operations, $*$ and $+$ with usual properties;
+    \item be able to lazily evaluate the expression.
+    \item \alert{Definition} happens \alert{at compile time};
+    \item \alert{Evaluation} happens \alert{either at run time or at compile time}, depending on the argument.
+    \item be able to define arbitrary univariate polynomial functions combining the operators $*$, $+$;
+    \end{itemize}
+    \item
+    \begin{itemize}
+    \item define a differentiation rule $D$ with usual properties, and introduce it to the grammar;
+    \end{itemize}
   \end{itemize}
   We choose a \emph{polynomial-like} notation for the function, i.e.
   $f(x)=x(x-x^2+\frac{\partial(x^3+x)}{\partial x})$
   translates to
   \verb1auto f_x=x*(x-x*x+D(x*x*x+x));1.
 
-  NOTE: \alert{using C++14 standard}.
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
@@ -491,8 +605,7 @@ int main(){
   std::cout<< expr(3)<<"\n"; // evaluate it in x=3
 }
   \end{Cpplisting}
-  $\approx20$ lines of code. How would that look like using template metaprogramming?
-
+  $\approx30$ lines of code?
   That was easy.
 \end{frame}
 
@@ -503,11 +616,27 @@ int main(){
   $$
   i.e. we multiply the derivatives of each expression.
 
-  Let's define the derivative of each expression, starting from $\frac{\partial x}{\partial x}=1$
-  \begin{Cpplisting}[: x derivative]{}
-template <typename T1>
-struct expr_derivative;
+  We define the operator \verb1D1, and the derivation for a generic object T
+  \begin{Cpplisting}[: D.cpp]{}
+template <typename TT>
+struct expr_derivative{
+    using value_t = int;
 
+    template <typename T>
+    constexpr T operator()(T t_) const {
+        return 0;
+    }
+};
+
+template<typename T>
+constexpr expr_derivative<T> D(T) { return expr_derivative<T>();}
+  \end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Example I: ET/AD}
+  Let's define the derivative of each expression, starting from $\frac{\partial x}{\partial x}=1$
+
+  \begin{Cpplisting}[: Dp.cpp]{}
 template<>
 struct expr_derivative<p>{
 
@@ -537,7 +666,6 @@ struct expr_derivative<expr_plus<T1, T2> >{
 \begin{frame}[fragile]\frametitle{Example I: ET/AD}
   Derivative of the product: $\frac{\partial (a*b)}{\partial x}=\frac{\partial (a)}{\partial x}*b+a*\frac{\partial (b)}{\partial x}$
   \begin{Cpplisting}[: Dtimes.cpp]{}
-
 template <typename T1, typename T2>
 struct expr_derivative<expr_times<T1, T2> >{
 
@@ -590,6 +718,7 @@ int main(){
   \end{Cpplisting}
 \end{frame}
 
+
 \begin{frame}[fragile]\frametitle{Exercice I}
   Exercice: count (at compile time) the number of sums and multiplications of an expression,
   in order for the following to work:
@@ -600,7 +729,9 @@ std::cout<< "multiplications: "<< D(expr).mult_ops()<<"\n";
   \end{Cpplisting}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Example II: Storage}
+\subsection{Multidimensional Array Indexing}
+
+\begin{frame}[fragile]\frametitle{Example II: Storage Info}
   Goal:
   \begin{itemize}
   \item Implement a multidimensional array indexing
@@ -610,7 +741,7 @@ std::cout<< "multiplications: "<< D(expr).mult_ops()<<"\n";
   \end{itemize}
 
   \begin{onlyenv}<1>
-    \begin{Cpplisting}[: main\_storage.cpp]{}
+    \begin{Cpplisting}[: storage\_main.cpp]{}
 int main(){
 
 
@@ -633,7 +764,7 @@ int main(){
   std::cout<<"index(0,1,0): "<<meta_.index(0,1,0)<<"\n";//5
   std::cout<<"index(0,0,1): "<<meta_.index(0,0,1)<<"\n";//20
   //compile-time instance
-  constexpr storage_info<5> c_meta_{5,8};
+  constexpr storage_info<2> c_meta_{5,8};
   static_assert(c_meta_.index(1,0)==1, "error");
   static_assert(c_meta_.index(0,1)==5, "error");
 }
@@ -642,21 +773,25 @@ int main(){
 \end{frame}
 
 
-\begin{frame}[fragile]\frametitle{Example II: Storage}
-  Formula to compute the global index:
+\begin{frame}[fragile]\frametitle{Example II: Storage Info}
+  Formula to compute the global index for dimension n:
   $$
-  g_n = index_0 + (dims_{0})(index_{1}) + (dims_{0}dims_{1})(index_{2}) + ...
+  g_n = index(coord_n, coord_{n-1}, ...., coord_0) =
+  $$
+  $$
+  = coord_n + (dims_{n})(coord_{n-1}) + (dims_{n}dims_{n-1})(coord_{n-2}) + ...
   $$
   which is, for generic d dimensions
   $$
-  g_n = index_0 + \sum_{k=1}^{n-1}\left(\prod_{i=0}^{k-1}dims_i\right)(index_{k}) = index_0 + dim_1g_{n-1}
+  g_n = coord_n + \sum_{k=1}^{n-1}\left(\prod_{i=0}^{k-1}dims_{n-i}\right)(coord_{n-k}) = coord_n + dims_ng_{n-1}
   $$
   Think recursively:
   $$
-    \left\{
-  \begin{array}{l}
-      g_n = g_{n-1} * dims_{n} + index_{0};\\
-      g_0 = index_0
+  g_k =
+  \left\{
+  \begin{array}{ll}
+      g_{k-1} dims_{k} + coord_{k} & \forall k>0;\\
+      coord_0 & k=0
   \end{array}
   \right.
   $$
@@ -664,22 +799,23 @@ int main(){
 
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Example II: Storage}
+\begin{frame}[fragile]\frametitle{Example II: Storage Info}
   This example is written using the C++14 standard, and in particular shows a practical use case for
   variadic templates and \verb1std::integer_sequence1. It relies on recursion (this should be familiar).
 
-  \alert{Reminder:}
+  \alert{Reminder (variadic templates):}
   to specify etherogeneous lists of types:
   \begin{Cpplisting}[: variadic templates]{}
   template<typename ... Ints>
   constexpr int index(Ints ... idx){
   \end{Cpplisting}
 
+  \alert{Reminder (integer sequence):}
   to assign an integer index to each of the elements in the \verb1dims_1 ("zipping"):
   \begin{Cpplisting}[: integer sequence]{}
   template<int ... Indices, typename ... Ints>
   constexpr int idx_impl(std::integer_sequence< Indices ... > , Ints ... dims_) const{
-    do_something(attach_id(dims_, Indices) ...);
+    do_something(make_pair(dims_, Indices) ...);
   }
   \end{Cpplisting}
 \end{frame}
@@ -691,7 +827,8 @@ template <int Size>
 struct storage_info{
 
   template <typename ... Dims>
-  constexpr storage_info(Dims ... dims_) : m_dims{dims_ ...}{}
+  constexpr storage_info(Dims ... dims_)
+    : m_dims{dims_ ...}{}
 
   static constexpr int size(){return Size;}
 
@@ -702,10 +839,13 @@ private:
   int m_dims[Size];
 };
   \end{Cpplisting}
-\uncover<2>{  We need to imlement the \emph{index} method }
+\uncover<2>{  We need to implement the \emph{index} method }
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Example II: Storage Info}
+
+  The index member function satisfies the requested API, and calls an helper function \verb~idx_impl~, passing on a new parameter pack: \alert{$n$}
+
   \begin{Cpplisting}[: index.cpp]{}
 template<typename ... Ints>
 constexpr int index(Ints ... coords_) const{
@@ -714,13 +854,13 @@ constexpr int index(Ints ... coords_) const{
     , coords_ ... );
 }
   \end{Cpplisting}
-  \uncover<2>{  We pass on 2 parameter packs: the \emph{coordinates} $n$ and the \emph{indices} $idx$,
+  \uncover<2>{  We pass on 2 parameter packs: the \emph{coordinates} $coord$ and the \emph{indices} $n$,
     we have to implement the recursive formula
   $$
     \left\{
     \begin{array}{l}
-      g_n = g_{n-1} * dims_{n-1} + idx_{n};\\
-      g_0 = index_0
+      g_k = g_{k-1} dims_{k} + coord_{k};\\
+      g_0 = coord_0
     \end{array}
     \right.
   $$
@@ -730,20 +870,19 @@ constexpr int index(Ints ... coords_) const{
 
 \begin{frame}[fragile]\frametitle{Example II: Storage Info}
   $$
-      g_n = g_{n-1} * dims_{n-1} + index_{n};
+      g_k = g_{k-1} dims_{k} + coord_{k};
   $$
   \begin{Cpplisting}[: strides.cpp]{}
-template<int Current
-         , int ... RemainingIndices
-         , typename CurrentCoord
-         , typename ... RemainingCoords>
+template<int CurK, int ... RestK
+         , typename CurC, typename ... RestC>
 constexpr int idx_impl(
-        std::integer_sequence< int,  Current, RemainingIndices ... >
-        , CurrentCoord first_coord_
-        , RemainingCoords ... coords_) const {
-  return first_coord_
-  + m_dims[Current]
-  * idx_impl(std::integer_sequence<int, RemainingIndices ...>(), coords_ ...);
+        std::integer_sequence< int,  CurK, RestK ... >
+        , CurC first_coord_, RestC ... coords_) const {
+
+  return first_coord_ // coord_k
+  + m_dims[CurK] //dims_k
+  * idx_impl(std::integer_sequence<int, RestK ...>()
+             , coords_ ...); // recursion
 }
   \end{Cpplisting}
 \end{frame}
@@ -751,11 +890,11 @@ constexpr int idx_impl(
 
 \begin{frame}[fragile]\frametitle{Example II: Storage Info}
 $$
-  g_0 = index_0
+  g_0 = coord_0
 $$
   \begin{Cpplisting}[: stop\_rec.cpp]{}
-template<int Index, typename Coord>
-constexpr int idx_impl(std::integer_sequence< int, Index > , Coord coord_) const{
+template<int N, typename Coord>
+constexpr int idx_impl(std::integer_sequence< int, N > , Coord coord_) const{
   return coord_;
 }
   \end{Cpplisting}

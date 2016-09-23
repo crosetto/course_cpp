@@ -35,10 +35,23 @@
 %\cscstableofcontents[hideallsubsections]{Title}
 \cscstableofcontents{Initialization of Static Variable}
 
+\begin{frame}[fragile]{Material}
+  Clone the github repo
+\begin{verbatim}
+git clone https://github.com/crosetto/examples_cpp.git
+\end{verbatim}
+  Most of the code snippets shown are avaliable in
+\begin{verbatim}
+examples_cpp/Code/StaticVariables/
+\end{verbatim}
+\end{frame}
+
+\section{Initialization}
+
 \begin{frame}[fragile]\frametitle{Static Variables}
   \begin{itemize}
     \item Are initialized when the program starts (before all other variables);
-    \item Are deleted whe the program ends;
+    \item Are deleted when the program ends;
     \item Often used in factory or singleton design patterns;
   \end{itemize}
 \end{frame}
@@ -78,6 +91,24 @@ int main(){
 \end{Cpplisting}
 \end{frame}
 
+
+\begin{frame}[fragile]\frametitle{Static Variables Initialization}
+Guess the output:
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct S {
+    static int m_c;
+};
+struct D{
+    static int m_d ;
+};
+int D::m_d = 10 * S::m_c;
+int S::m_c = 5;
+int main(){
+    std::cout << "m_d = " << D::m_d << '\n';
+    std::cout << "m_c = " << S::m_c << '\n';}
+\end{Cpplisting}
+\end{frame}
+
 \begin{frame}[fragile]\frametitle{Static Variables Initialization}
 Guess the output: \textcolor{cscsgreen}{Independent of program order}
 \begin{Cpplisting}[: static\_init.cpp]{}
@@ -92,6 +123,28 @@ int S::m_c = 5;
 int main(){
     std::cout << "m_d = " << D::m_d << '\n'; //50
     std::cout << "m_c = " << S::m_c << '\n';}//5
+\end{Cpplisting}
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Variables Initialization}
+Guess the output:
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct F{
+    static int m_f ;
+};
+struct D{
+    static int m_d ;
+};
+struct S {
+    static int m_c;
+};
+int S::m_c = 5;
+int F::m_f = 10 * D::m_d;
+int D::m_d = 10 * S::m_c;
+int main(){
+    std::cout << "m_f = " << F::m_f << '\n';
+    std::cout << "m_d = " << D::m_d << '\n';
+    std::cout << "m_c = " << S::m_c << '\n';}
 \end{Cpplisting}
 \end{frame}
 
@@ -117,6 +170,29 @@ int main(){
     std::cout << "m_c = " << S::m_c << '\n';}//5
 \end{Cpplisting}
 \end{frame}
+
+\begin{frame}[fragile]\frametitle{Static Variables Initialization}
+Guess the output:
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct F{
+    static int m_f ;
+};
+struct D{
+    static int m_d ;
+};
+struct S {
+    static int m_c;
+};
+int F::m_f = 10 * D::m_d;
+int D::m_d = 10 * S::m_c;
+int S::m_c = 5;
+int main(){
+    std::cout << "m_f = " << F::m_f << '\n';
+    std::cout << "m_d = " << D::m_d << '\n';
+    std::cout << "m_c = " << S::m_c << '\n';}
+\end{Cpplisting}
+\end{frame}
+
 
 \begin{frame}[fragile]\frametitle{Static Variables Initialization}
 Guess the output: \textcolor{cscsred}{NOT OK}, depending on initialization order
@@ -209,7 +285,31 @@ int main(){
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{First Touch Initialization}
-  \verb1m_f1, \verb1m_d1, \verb1m_c1 are \textcolor{cscsred}{NOT} constant:
+  \verb1m_f1, \verb1m_d1, \verb1m_c1 are  \textcolor{cscsred}{NOT}  constant?
+  %% \onslide<1>{
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct F{
+    static int m_f ;
+};
+struct D{
+    static int m_d ;
+};
+struct S {
+    static int m_c;
+};
+int F::m_f = 10 * D::m_d;
+int D::m_d = 10 * S::m_c;
+int S::m_c = 5;
+int main(){
+    std::cout << "m_f = " << F::m_f << '\n'; // 0
+    std::cout << "m_d = " << D::m_d << '\n'; // 50
+    std::cout << "m_c = " << S::m_c << '\n';}// 5
+\end{Cpplisting}
+%% }
+\end{frame}
+
+\begin{frame}[fragile]\frametitle{First Touch Initialization}
+  \textcolor{cscsred}{NO}, but I can use \textcolor{cscsgreen}{first-touch initialization}
   %% \onslide<1>{
 \begin{Cpplisting}[: static\_init.cpp]{}
 static int D(); //forward declaration
@@ -244,7 +344,7 @@ int main(){
 
 \end{frame}
 
-
+\section{Linking}
 
 \begin{frame}[fragile]\frametitle{Static Initialization}
 \begin{Cpplisting}[: init\_static.hpp]{}
@@ -299,7 +399,7 @@ And now? (\verb1g++ init_static.cpp test_static.cpp1)
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Static Initialization}
-  Suppose you are developing a library: the user writes the main file, and you register the products in a separate compilation unit:
+  Suppose you are developing a library: the user writes the main file, and you register the products in a separate translation unit:
 
   \begin{onlyenv}<1>
 \begin{Shelllisting}{}
