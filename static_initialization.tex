@@ -4,7 +4,7 @@
 \usetheme{CSCS}
 
 % define footer text
-\newcommand{\footlinetext}{Insert\_Footer}
+\newcommand{\footlinetext}{P. Crosetto}
 
 % Select the image for the title page
 \newcommand{\picturetitle}{cscs_images/image3.pdf}
@@ -16,7 +16,7 @@
 % cscsred, cscsgrey, cscsgreen, cscsblue, cscsbrown, cscspurple, cscsyellow, cscsblack, cscswhite
 
 \author{Paolo Crosetto, C2SM/CSCS}
-\title{Static Variable Initialization}
+\title{Static Variables Initialization}
 \subtitle{Advanced C++ for HPC}
 \date{\today}
 
@@ -54,6 +54,11 @@ examples_cpp/Code/StaticVariables/
     \item Are deleted when the program ends;
     \item Often used in factory or singleton design patterns;
   \end{itemize}
+\begin{Cpplisting}[: static\_init.cpp]{}
+struct S {
+    static int s_my_static_var;
+};
+\end{Cpplisting}
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Static Variables Initialization}
@@ -61,16 +66,16 @@ examples_cpp/Code/StaticVariables/
 
 \begin{Cpplisting}[: static\_init.cpp]{}
 struct S {
-    static int m_c;
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-int S::m_c = 5;
-int D::m_d = 10 * S::m_c;
+int S::s_c = 5;
+int D::s_d = 10 * S::s_c;
 int main(){
-    std::cout << "m_d = " << D::m_d << '\n';
-    std::cout << "m_c = " << S::m_c << '\n';}
+    std::cout << "s_d = " << D::s_d << '\n';
+    std::cout << "s_c = " << S::s_c << '\n';}
 \end{Cpplisting}
 \end{frame}
 
@@ -78,16 +83,16 @@ int main(){
 Guess the output: \textcolor{cscsgreen}{OK}
 \begin{Cpplisting}[: static\_init.cpp]{}
 struct S {
-    static int m_c;
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-int S::m_c = 5;
-int D::m_d = 10 * S::m_c;
+int S::s_c = 5;
+int D::s_d = 10 * S::s_c;
 int main(){
-    std::cout << "m_d = " << D::m_d << '\n'; //50
-    std::cout << "m_c = " << S::m_c << '\n';}//5
+    std::cout << "s_d = " << D::s_d << '\n'; //50
+    std::cout << "s_c = " << S::s_c << '\n';}//5
 \end{Cpplisting}
 \end{frame}
 
@@ -96,16 +101,16 @@ int main(){
 Guess the output:
 \begin{Cpplisting}[: static\_init.cpp]{}
 struct S {
-    static int m_c;
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-int D::m_d = 10 * S::m_c;
-int S::m_c = 5;
+int D::s_d = 10 * S::s_c;
+int S::s_c = 5;
 int main(){
-    std::cout << "m_d = " << D::m_d << '\n';
-    std::cout << "m_c = " << S::m_c << '\n';}
+    std::cout << "s_d = " << D::s_d << '\n';
+    std::cout << "s_c = " << S::s_c << '\n';}
 \end{Cpplisting}
 \end{frame}
 
@@ -113,38 +118,38 @@ int main(){
 Guess the output: \textcolor{cscsgreen}{Independent of program order}
 \begin{Cpplisting}[: static\_init.cpp]{}
 struct S {
-    static int m_c;
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-int D::m_d = 10 * S::m_c;
-int S::m_c = 5;
+int D::s_d = 10 * S::s_c;
+int S::s_c = 5;
 int main(){
-    std::cout << "m_d = " << D::m_d << '\n'; //50
-    std::cout << "m_c = " << S::m_c << '\n';}//5
+    std::cout << "s_d = " << D::s_d << '\n'; //50
+    std::cout << "s_c = " << S::s_c << '\n';}//5
 \end{Cpplisting}
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Static Variables Initialization}
 Guess the output:
 \begin{Cpplisting}[: static\_init.cpp]{}
-struct F{
-    static int m_f ;
+struct S {
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-struct S {
-    static int m_c;
+struct F{
+    static int s_f ;
 };
-int S::m_c = 5;
-int F::m_f = 10 * D::m_d;
-int D::m_d = 10 * S::m_c;
+int S::s_c = 5;
+int F::s_f = 10 * D::s_d;
+int D::s_d = 10 * S::s_c;
 int main(){
-    std::cout << "m_f = " << F::m_f << '\n';
-    std::cout << "m_d = " << D::m_d << '\n';
-    std::cout << "m_c = " << S::m_c << '\n';}
+    std::cout << "s_f = " << F::s_f << '\n';
+    std::cout << "s_d = " << D::s_d << '\n';
+    std::cout << "s_c = " << S::s_c << '\n';}
 \end{Cpplisting}
 \end{frame}
 
@@ -152,44 +157,44 @@ int main(){
 \begin{frame}[fragile]\frametitle{Static Variables Initialization}
 Guess the output: \textcolor{cscsgreen}{OK}
 \begin{Cpplisting}[: static\_init.cpp]{}
-struct F{
-    static int m_f ;
+struct S {
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-struct S {
-    static int m_c;
+struct F{
+    static int s_f ;
 };
-int S::m_c = 5;
-int F::m_f = 10 * D::m_d;
-int D::m_d = 10 * S::m_c;
+int S::s_c = 5;
+int F::s_f = 10 * D::s_d;
+int D::s_d = 10 * S::s_c;
 int main(){
-    std::cout << "m_f = " << F::m_f << '\n'; //500
-    std::cout << "m_d = " << D::m_d << '\n'; //50
-    std::cout << "m_c = " << S::m_c << '\n';}//5
+    std::cout << "s_f = " << F::s_f << '\n'; //500
+    std::cout << "s_d = " << D::s_d << '\n'; //50
+    std::cout << "s_c = " << S::s_c << '\n';}//5
 \end{Cpplisting}
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Static Variables Initialization}
 Guess the output:
 \begin{Cpplisting}[: static\_init.cpp]{}
-struct F{
-    static int m_f ;
+struct S {
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-struct S {
-    static int m_c;
+struct F{
+    static int s_f ;
 };
-int F::m_f = 10 * D::m_d;
-int D::m_d = 10 * S::m_c;
-int S::m_c = 5;
+int F::s_f = 10 * D::s_d;
+int D::s_d = 10 * S::s_c;
+int S::s_c = 5;
 int main(){
-    std::cout << "m_f = " << F::m_f << '\n';
-    std::cout << "m_d = " << D::m_d << '\n';
-    std::cout << "m_c = " << S::m_c << '\n';}
+    std::cout << "s_f = " << F::s_f << '\n';
+    std::cout << "s_d = " << D::s_d << '\n';
+    std::cout << "s_c = " << S::s_c << '\n';}
 \end{Cpplisting}
 \end{frame}
 
@@ -197,22 +202,22 @@ int main(){
 \begin{frame}[fragile]\frametitle{Static Variables Initialization}
 Guess the output: \textcolor{cscsred}{NOT OK}, depending on initialization order
 \begin{Cpplisting}[: static\_init.cpp]{}
-struct F{
-    static int m_f ;
+struct S {
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-struct S {
-    static int m_c;
+struct F{
+    static int s_f ;
 };
-int F::m_f = 10 * D::m_d;
-int D::m_d = 10 * S::m_c;
-int S::m_c = 5;
+int F::s_f = 10 * D::s_d;
+int D::s_d = 10 * S::s_c;
+int S::s_c = 5;
 int main(){
-    std::cout << "m_f = " << F::m_f << '\n';  // 0
-    std::cout << "m_d = " << D::m_d << '\n';  // 50
-    std::cout << "m_c = " << S::m_c << '\n';} // 5
+    std::cout << "s_f = " << F::s_f << '\n';  // 0
+    std::cout << "s_d = " << D::s_d << '\n';  // 50
+    std::cout << "s_c = " << S::s_c << '\n';} // 5
 \end{Cpplisting}
 \end{frame}
 
@@ -237,25 +242,25 @@ int main(){
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{Constant Initialization}
-  \verb1m_f1, \verb1m_d1, \verb1m_c1 are constant?
+  \verb1s_f1, \verb1s_d1, \verb1s_c1 are constant?
   %% \onslide<1>{
 \begin{Cpplisting}[: static\_init.cpp]{}
-struct F{
-    static int m_f ;
+struct S {
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-struct S {
-    static int m_c;
+struct F{
+    static int s_f ;
 };
-int F::m_f = 10 * D::m_d;
-int D::m_d = 10 * S::m_c;
-int S::m_c = 5;
+int F::s_f = 10 * D::s_d;
+int D::s_d = 10 * S::s_c;
+int S::s_c = 5;
 int main(){
-    std::cout << "m_f = " << F::m_f << '\n'; // 0
-    std::cout << "m_d = " << D::m_d << '\n'; // 50
-    std::cout << "m_c = " << S::m_c << '\n';}// 5
+    std::cout << "s_f = " << F::s_f << '\n'; // 0
+    std::cout << "s_d = " << D::s_d << '\n'; // 50
+    std::cout << "s_c = " << S::s_c << '\n';}// 5
 \end{Cpplisting}
 %% }
 \end{frame}
@@ -264,46 +269,46 @@ int main(){
   \textcolor{cscsgreen}{YES}
   %% \onslide<1>{
 \begin{Cpplisting}[: static\_init.cpp]{}
-struct F{
-    static constexpr int m_f = 10 * D::m_d ;
+struct S {
+    static constexpr int s_c = 5;
 };
 struct D{
-    static constexpr int m_d = 10 * S::m_c ;
+    static constexpr int s_d = 10 * S::s_c ;
 };
-struct S {
-    static constexpr int m_c = 5;
+struct F{
+    static constexpr int s_f = 10 * D::s_d ;
 };
-constexpr int F::m_f;
-constexpr int D::m_d;
-constexpr int S::m_c;
+constexpr int F::s_f;
+constexpr int D::s_d;
+constexpr int S::s_c;
 int main(){
-    std::cout << "m_f = " << F::m_f << '\n'; // 500
-    std::cout << "m_d = " << D::m_d << '\n'; // 50
-    std::cout << "m_c = " << S::m_c << '\n';}// 5
+    std::cout << "s_f = " << F::s_f << '\n'; // 500
+    std::cout << "s_d = " << D::s_d << '\n'; // 50
+    std::cout << "s_c = " << S::s_c << '\n';}// 5
 \end{Cpplisting}
 %% }
 \end{frame}
 
 \begin{frame}[fragile]\frametitle{First Touch Initialization}
-  \verb1m_f1, \verb1m_d1, \verb1m_c1 are  \textcolor{cscsred}{NOT}  constant?
+  \verb1s_f1, \verb1s_d1, \verb1s_c1 are  \textcolor{cscsred}{NOT}  constant?
   %% \onslide<1>{
 \begin{Cpplisting}[: static\_init.cpp]{}
-struct F{
-    static int m_f ;
+struct S {
+    static int s_c;
 };
 struct D{
-    static int m_d ;
+    static int s_d ;
 };
-struct S {
-    static int m_c;
+struct F{
+    static int s_f ;
 };
-int F::m_f = 10 * D::m_d;
-int D::m_d = 10 * S::m_c;
-int S::m_c = 5;
+int F::s_f = 10 * D::s_d;
+int D::s_d = 10 * S::s_c;
+int S::s_c = 5;
 int main(){
-    std::cout << "m_f = " << F::m_f << '\n'; // 0
-    std::cout << "m_d = " << D::m_d << '\n'; // 50
-    std::cout << "m_c = " << S::m_c << '\n';}// 5
+    std::cout << "s_f = " << F::s_f << '\n'; // 0
+    std::cout << "s_d = " << D::s_d << '\n'; // 50
+    std::cout << "s_c = " << S::s_c << '\n';}// 5
 \end{Cpplisting}
 %% }
 \end{frame}
@@ -316,21 +321,21 @@ static int D(); //forward declaration
 static int S();
 
 static int F(){
-    static int m_f=10 * D() ;
-    return m_f;
+    static int s_f=10 * D() ;
+    return s_f;
 }
 static int D(){
-    static int m_d = 10 * S() ;
-    return m_d;
+    static int s_d = 10 * S() ;
+    return s_d;
 }
 static int S() {
-    static int m_c=5;
-    return m_c;
+    static int s_c=5;
+    return s_c;
 }
 int main(){
-    std::cout << "m_f = " << F() << '\n'; //500
-    std::cout << "m_d = " << D() << '\n'; //50
-    std::cout << "m_c = " << S() << '\n';}//5
+    std::cout << "s_f = " << F() << '\n'; //500
+    std::cout << "s_d = " << D() << '\n'; //50
+    std::cout << "s_c = " << S() << '\n';}//5
 \end{Cpplisting}
 %% }
 \end{frame}
@@ -436,7 +441,7 @@ And now? (\verb1g++ init_static.cpp test_static.cpp1)
 > g++ -c init_static.cpp -fPIC -o libs.o
 > g++ -shared -o libs.so libs.o
 > g++ test_static.cpp -O3 -L. libs.so
-> ./a.out
+> LD_LIBRARY_PATH=`pwd` ./a.out
 initialize float
 initialize double
 \end{Shelllisting}
