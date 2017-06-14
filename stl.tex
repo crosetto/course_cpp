@@ -46,9 +46,9 @@ git clone https://github.com/crosetto/examples_cpp.git
 \begin{verbatim}
 examples_cpp/Code/STL/
 \end{verbatim}
-  Exercices are in
+  Exercises are in
 \begin{verbatim}
-examples_cpp/Exercices/STL/
+examples_cpp/Exercises/STL/
 \end{verbatim}
 \end{frame}
 
@@ -145,7 +145,7 @@ static_assert(b_[1]==0, "");
 std::vector< bool > v_={true, false, true};
 std::cout<<v_.size()<<"\n"; // 3
 constexpr std::bitset<3> b_(0b101);
-std::cout<<sizeof(v_)<<" != "<<sizeof(b_)<<"\n"; // 3 =! 8
+std::cout<<sizeof(v_)<<" != "<<sizeof(b_)<<"\n"; // 40 =! 8
 std::cout<<b_[2]<<" = "<<v_[2]<<"\n"; // 1 = 1
 static_assert(b_[1]==0, "");
   \end{Cpplisting}
@@ -399,7 +399,7 @@ int main(){
   Almost all STL containers have an allocator template parameter.
   Can be used to
   \begin{itemize}
-    \item customize the storage allocation policy (cf. example with std::vector)
+    \item customize the storage allocation/deallocation
     \item customize the container for specific types of memory
   \end{itemize}
   since C++11:
@@ -432,9 +432,9 @@ main(){
   \end{Cpplisting}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Exercice}
+\begin{frame}[fragile]\frametitle{Exercise}
   Modify the allocator on the previous slide
-  (you can find it in \verb~cpp_examples/Exercices/STL/allocator~), so that it allocates on the
+  (you can find it in \verb~cpp_examples/Exercises/STL/allocator~), so that it allocates on the
   stack instead of the heap.
 
 \end{frame}
@@ -493,6 +493,7 @@ struct Container<T>::iterator{
   \item forward (also multistep increment)
   \item bidirectional (also decrements)
   \item random (also random access)
+  \item mutable/constant
   \end{itemize}
   \alert{STL algorithms work with iterators}
   \begin{onlyenv}<1>
@@ -526,7 +527,7 @@ cout<<i<<" ";
 
 \begin{frame}[fragile]\frametitle{Generic API}
   \begin{center}
-    Forward iterator:\\
+    Iterator:\\
 \only<1>{
     \includegraphics[width=0.7\textwidth]{cpp_course/Images/range-begin-end.png}\\
 }
@@ -1329,13 +1330,13 @@ constexpr auto get(Tuple t_){
   \end{Cpplisting}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Exercice:}
+\begin{frame}[fragile]\frametitle{Exercise:}
 
   The ternary operator (\verb1cond ? a : b1) used in the get method only works for types which can be
   casted into each other (e.g. double and int).
 
   Modify \verb1my_tuple1 so that the following can work
-  \begin{Cpplisting}[: Exercices/STL/tuple.cpp]{}
+  \begin{Cpplisting}[: Exercises/STL/tuple.cpp]{}
 int main(){
   my_tuple<double, std::string> t_(3.4, "hello");
   std::cout<<get<1>(t_)<<"\n";

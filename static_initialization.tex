@@ -48,11 +48,12 @@ examples_cpp/Code/StaticVariables/
 
 \section{Initialization}
 
-\begin{frame}[fragile]\frametitle{Static Variables}
+\begin{frame}[fragile]\frametitle{Global or Static Variables}
   \begin{itemize}
     \item Are initialized when the program starts (before all other variables);
-    \item Are deleted when the program ends;
-    \item Often used in factory or singleton design patterns;
+    \item Are deleted when the program ends (in reverse order);
+    \item Are stored in the executable;
+    \item Often used in factory or singleton design patterns, when interacting with other programming languages ...;
   \end{itemize}
 \begin{Cpplisting}[: static\_init.cpp]{}
 struct S {
@@ -232,7 +233,7 @@ int main(){
   \begin{itemize}
   \item Avoid using static variables;
   \item Or use constant initialization if the static variables are constants;
-  \item Or initialize the variables on first touch.
+  \item Or use the initialize on first use idiom.
   \end{itemize}
 
   \begin{definition}[Translation Unit]
@@ -289,7 +290,7 @@ int main(){
 %% }
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{First Touch Initialization}
+\begin{frame}[fragile]\frametitle{Initialize on First Use}
   \verb1s_f1, \verb1s_d1, \verb1s_c1 are  \textcolor{cscsred}{NOT}  constant?
   %% \onslide<1>{
 \begin{Cpplisting}[: static\_init.cpp]{}
@@ -313,8 +314,8 @@ int main(){
 %% }
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{First Touch Initialization}
-  \textcolor{cscsred}{NO}, but I can use \textcolor{cscsgreen}{first-touch initialization}
+\begin{frame}[fragile]\frametitle{Initialize on First Use}
+  \textcolor{cscsred}{NO}, but I can use \textcolor{cscsgreen}{initialize on first use idiom}
   %% \onslide<1>{
 \begin{Cpplisting}[: static\_init.cpp]{}
 static int D(); //forward declaration
@@ -340,18 +341,22 @@ int main(){
 %% }
 \end{frame}
 
-\begin{frame}\frametitle{First Touch Initialization}
-  In the first touch initialization the variables are static defined locally in a function body:
+\begin{frame}[fragile]\frametitle{Initialize on First Use}
+  In the initialization on first use the variables are static defined locally in a function body:
   \begin{itemize}
-  \item They are instantiated when the function gets called (they are not instantiated when not used);
-  \item They are deleted when the program ends, like other static variables.
+  \item They are constructed when the function gets called (they are not constructed when not used);
+  \item They are constructed only once, even though the functions are called several times;
+  \item They are deleted when the program ends, like other static variables, in reversed order.
+  \item Access is thread-safe (since C++11)
+  \item<2-> Is this magic?
+    \uncover<3->{\alert{NO:} check https://godbolt.org/g/OtyNCe
+    }
   \end{itemize}
-
 \end{frame}
 
 \section{Linking}
 
-\begin{frame}[fragile]\frametitle{Static Initialization}
+\begin{frame}[fragile]\frametitle{Static Initialization and Linking}
 \begin{Cpplisting}[: init\_static.hpp]{}
 template<typename T>
 struct register_product{
@@ -375,7 +380,7 @@ int main()
 Output? (\verb1g++ init_static.cpp test_static.cpp1)
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Static Initialization}
+\begin{frame}[fragile]\frametitle{Static Initialization and Linking}
 \begin{Cpplisting}[: init\_static.hpp]{}
 template<typename T>
 struct register_product{
@@ -399,7 +404,7 @@ int main()
 And now? (\verb1g++ init_static.cpp test_static.cpp1)
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Static Initialization}
+\begin{frame}[fragile]\frametitle{Static Initialization and Linking}
   All static variables get initialized when the program starts, even when they are not uesd anywhere!
 \end{frame}
 
@@ -449,7 +454,7 @@ initialize double
 \uncover<4>{It still works. Awesome: the user does not have to manually register float and double.}
 \end{frame}
 
-\begin{frame}[fragile]\frametitle{Static Initialization}
+\begin{frame}[fragile]\frametitle{Static Initialization and Linking}
   Suppose that the user wants to compile your library statically, instead of dynamically:
 
   \begin{onlyenv}<1>
@@ -495,7 +500,7 @@ the executable.}
   \item Static variable initialization is difficult to debug (happens before the program starts),
     so try to avoid using static variables with compicated constructors;
   \item Use constant initialization when possible;
-  \item Use first touch initialization otherwise;
+  \item Use initialize on first use idiom otherwise;
   \item Do not rely on static initialization side-effects, it is not portable.
   \end{itemize}
 \end{frame}
